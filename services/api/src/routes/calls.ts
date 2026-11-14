@@ -92,11 +92,8 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   const role=roleRow.role;
   const allowed=role==="superadmin"||(role==="admin"&&body.data.type!=="permanent_ban")||(role==="moderator"&&body.data.type==="warning");
   if(!allowed)return reply.code(403).send({error:{code:"SANCTION_ROLE_FORBIDDEN",message:"Your role cannot issue this sanction type."}});
-  const expiresAt=body.data.type==="temporary_suspension"&&body.data.durationHours?new Date(Date.now()+body.data.durationHours*3600000).toISOString():null;
-  const {data,error}=await db.from("user_sanctions").insert({user_id:body.data.userId,sanction_type:body.data.type,reason:body.data.reason,expires_at:expiresAt,issued_by:user.id}).select("id,user_id,sanction_type,reason,starts_at,expires_at,active").single();
-  if(error)return reply.code(503).send({error:{code:"SANCTION_FAILED",message:"Sanction could not be issued."}});
-  const {error:auditError}=await db.from("moderation_audit_log").insert({actor_id:user.id,action:"sanction_"+body.data.type,target_user_id:body.data.userId,sanction_id:data.id,details:{durationHours:body.data.durationHours??null}});
-  if(auditError)return reply.code(503).send({error:{code:"AUDIT_WRITE_FAILED",message:"Sanction issued but audit write failed; investigate immediately."}});
+  const {data,error}=await db.rpc("moderation_issue_sanction_with_audit",{p_user_id:body.data.userId,p_type:body.data.type,p_reason:body.data.reason,p_duration_hours:body.data.durationHours??null,p_actor_id:user.id,p_actor_role:role});
+  if(error){request.log.error({err:error},"atomic sanction issue failed");return reply.code(503).send({error:{code:"SANCTION_TRANSACTION_FAILED",message:"Sanction and audit transaction failed; no change was committed."}});}
   return reply.code(201).send({data});
  });
  app.post("/v1/calls/token",async(request,reply)=>{
