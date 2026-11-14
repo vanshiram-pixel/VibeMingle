@@ -1,0 +1,13 @@
+{
+  "name": "vibemingle",
+  "private": true,
+  "version": "0.1.0",
+  "description": "VibeMingle — Connect Beyond Borders",
+  "workspaces": ["apps/web", "apps/admin", "services/api", "packages/contracts"],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": { "node": ">=20.11.0", "npm": ">=10.2.0" }
+}
