@@ -37,3 +37,21 @@ test("AI provider requests are timeout-bound and metered without text",()=>{
  assert.match(ai,/output_chars:translated\.length/);
  assert.doesNotMatch(ai,/insert\(\{[^}]*text:/s);
 });
+
+test("AI translation checks consent and feature flag before provider call",()=>{
+ const consentIndex=ai.indexOf("AI_CONSENT_REQUIRED");
+ const disabledIndex=ai.indexOf("AI_DISABLED");
+ const providerIndex=ai.indexOf('fetch("https://api.openai.com/v1/responses"');
+ assert.ok(consentIndex>0 && disabledIndex>consentIndex && providerIndex>disabledIndex);
+ assert.match(ai,/aiTranslationEnabled/);
+});
+test("AI translation fails closed when quota or usage metering is unavailable",()=>{
+ assert.match(ai,/AI_QUOTA_UNAVAILABLE/);
+ assert.match(ai,/AI_METERING_FAILED/);
+ assert.match(ai,/if\(meterError\)return reply\.code\(503\)/);
+});
+test("AI translation errors do not expose provider response bodies",()=>{
+ assert.match(ai,/AI_PROVIDER_ERROR/);
+ assert.match(ai,/AI_TIMEOUT/);
+ assert.doesNotMatch(ai,/response\.text\(\).*reply|payload\.error\.message/);
+});
