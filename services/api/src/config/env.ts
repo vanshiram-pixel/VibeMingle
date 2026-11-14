@@ -21,6 +21,7 @@ export const env = {
   openaiApiKey: process.env.OPENAI_API_KEY,
   aiTranslationEnabled: process.env.AI_TRANSLATION_ENABLED === "true",
   aiTranslationModel: process.env.AI_TRANSLATION_MODEL ?? "gpt-4o-mini",
+  aiTranslationGlobalDailyRequestLimit: positiveInteger("AI_TRANSLATION_GLOBAL_DAILY_REQUEST_LIMIT", 10000),
 } as const;
 export function assertProductionSecrets(): void {
   if (env.nodeEnv !== "production") return;
