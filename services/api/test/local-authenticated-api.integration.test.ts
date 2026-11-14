@@ -34,6 +34,10 @@ suite("local Supabase authenticated API ownership",()=>{
   assert.equal(noAuthRead.statusCode,401,"/v1/me must reject missing bearer tokens");
   const noAuthWrite=await app.inject({method:"PATCH",url:"/v1/me/profile",payload:{display_name:"Unauthenticated Name"}});
   assert.equal(noAuthWrite.statusCode,401,"/v1/me/profile must reject missing bearer tokens");
+  const noAuthFriends=await app.inject({method:"GET",url:"/v1/friends"});
+  assert.equal(noAuthFriends.statusCode,401,"friend list must reject missing bearer tokens");
+  const noAuthHeartbeat=await app.inject({method:"POST",url:"/v1/presence/heartbeat"});
+  assert.equal(noAuthHeartbeat.statusCode,401,"presence heartbeat must reject missing bearer tokens");
   const suffix=`${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const emails=[`api-a-${suffix}@example.test`,`api-b-${suffix}@example.test`];
   const password="LocalOnly-Integration-Password-42!";
