@@ -6,12 +6,12 @@ class MessagingScreen extends StatefulWidget {
  @override State<MessagingScreen> createState()=>_MessagingScreenState();
 }
 class _MessagingScreenState extends State<MessagingScreen>{
- final _db=Supabase.instance.client; late Future<List<Map<String,dynamic>>> _future;
+ final _db=Supabase.instance.client; late Future<List<Map<String,dynamic>> _future;
  @override void initState(){super.initState();_future=_load();}
- Future<List<Map<String,dynamic>>> _load() async {
+ Future<List<Map<String,dynamic>> _load() async {
   final uid=_db.auth.currentUser!.id;
   final rows=await _db.from('conversation_members').select('conversation_id,last_read_at,conversations(id,user_a,user_b,updated_at)').eq('user_id',uid).order('last_read_at',ascending:false);
-  return List<Map<String,dynamic>>>.from(rows);
+  return List<Map<String,dynamic>>.from(rows);
  }
  Future<void> _openFriend() async {
   final ctrl=TextEditingController();
@@ -20,7 +20,7 @@ class _MessagingScreenState extends State<MessagingScreen>{
   try{final conversation=await _db.rpc('conversation_open',params:{'p_friend':id});if(!mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>ConversationScreen(conversationId:conversation.toString()))).then((_)=>setState(()=>_future=_load()));}
   catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Chat नहीं खुला: $e')));}
  }
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Messages'),actions:[IconButton(onPressed:_openFriend,icon:const Icon(Icons.add_comment),tooltip:'New chat')]),body:FutureBuilder<List<Map<String,dynamic>>>(future:_future,builder:(c,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator());if(s.hasError)return Center(child:Text('Messages load नहीं हुए: ${s.error}'));final rows=s.data??[];if(rows.isEmpty)return const Center(child:Text('अभी कोई chat नहीं। + से friend chat खोलें।'));return ListView.builder(itemCount:rows.length,itemBuilder:(c,i){final conv=rows[i]['conversations'] as Map<String,dynamic>?;final uid=_db.auth.currentUser!.id;final peer=conv==null?'Friend':(conv['user_a']==uid?conv['user_b']:conv['user_a']);return ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text('Friend • ${peer.toString().substring(0,8)}…'),subtitle:const Text('Private conversation'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>ConversationScreen(conversationId:rows[i]['conversation_id'].toString()))).then((_)=>setState(()=>_future=_load()));});}));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Messages'),actions:[IconButton(onPressed:_openFriend,icon:const Icon(Icons.add_comment),tooltip:'New chat')]),body:FutureBuilder<List<Map<String,dynamic>>(future:_future,builder:(c,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator());if(s.hasError)return Center(child:Text('Messages load नहीं हुए: ${s.error}'));final rows=s.data??[];if(rows.isEmpty)return const Center(child:Text('अभी कोई chat नहीं। + से friend chat खोलें।'));return ListView.builder(itemCount:rows.length,itemBuilder:(c,i){final conv=rows[i]['conversations'] as Map<String,dynamic>?;final uid=_db.auth.currentUser!.id;final peer=conv==null?'Friend':(conv['user_a']==uid?conv['user_b']:conv['user_a']);return ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text('Friend • ${peer.toString().substring(0,8)}…'),subtitle:const Text('Private conversation'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>ConversationScreen(conversationId:rows[i]['conversation_id'].toString()))).then((_)=>setState(()=>_future=_load()));});}));
 }
 }
 
@@ -31,7 +31,7 @@ class ConversationScreen extends StatefulWidget{
 class _ConversationScreenState extends State<ConversationScreen>{
  final _db=Supabase.instance.client;final _input=TextEditingController();List<Map<String,dynamic>> _messages=[];bool _loading=true,_sending=false;RealtimeChannel? _channel;
  @override void initState(){super.initState();_load();_channel=_db.channel('messages-${widget.conversationId}').onPostgresChanges(event:PostgresChangeEvent.all,schema:'public',table:'messages',filter:PostgresChangeFilter(type:PostgresChangeFilterType.eq,column:'conversation_id',value:widget.conversationId),callback:(_)=>_load()).subscribe();}
- Future<void> _load()async{try{final rows=await _db.from('messages').select('id,sender_id,body,created_at,edited_at,deleted_at').eq('conversation_id',widget.conversationId).order('created_at');if(mounted)setState(()=>_messages=List<Map<String,dynamic>>>.from(rows));await _db.rpc('conversation_mark_read',params:{'p_conversation':widget.conversationId});}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Messages load error: $e')));}finally{if(mounted)setState(()=>_loading=false);}}
+ Future<void> _load()async{try{final rows=await _db.from('messages').select('id,sender_id,body,created_at,edited_at,deleted_at').eq('conversation_id',widget.conversationId).order('created_at');if(mounted)setState(()=>_messages=List<Map<String,dynamic>>.from(rows));await _db.rpc('conversation_mark_read',params:{'p_conversation':widget.conversationId});}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Messages load error: $e')));}finally{if(mounted)setState(()=>_loading=false);}}
  Future<void> _send()async{final body=_input.text.trim();if(body.isEmpty||_sending)return;setState(()=>_sending=true);try{await _db.rpc('message_send',params:{'p_conversation':widget.conversationId,'p_body':body});_input.clear();await _load();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Message नहीं भेजा: $e')));}finally{if(mounted)setState(()=>_sending=false);}}
  Future<void> _delete(String id)async{try{await _db.rpc('message_delete',params:{'p_message':id});await _load();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Delete failed: $e')));}}
  @override void dispose(){_input.dispose();if(_channel!=null)_db.removeChannel(_channel!);super.dispose();}
