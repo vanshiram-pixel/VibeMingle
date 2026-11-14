@@ -57,12 +57,14 @@ This is a source/repository audit, not a live production or legal certification.
 - CI green means automated repository checks passed; it does not mean production readiness.
 
 
-## Phase 9 — Social Graph & Messaging (implementation underway)
+## Phase 9 — Social Graph & Messaging (messaging slice VERIFIED)
 
-**Messaging slice delivered to branch (pending CI/local DB verification):**
-- Migration 0018 private conversation/member/message schema; RLS participant reads and no direct client write policies.
-- Migration 0019 transactional RPCs: friend-only conversation open, authenticated message send/edit/delete, conversation read marker. Actor identity comes from auth.uid(); block checks gate conversation creation/send.
-- API routes: conversation create/list, cursor-based message listing, send/edit/delete, mark-read; registered in API server.
-- Flutter: inbox, friend-list tap to open chat, realtime message refresh, send and sender-only soft-delete UI.
-- Tests: SQL smoke assertions for messaging schema/write-policy; RLS fixture for participant reads and direct-write rejection; local authenticated API integration exercises two-user friend messaging, sender edit/delete ownership, and unauthenticated route rejection.
-- Latest implementation commits include 0018 schema, 0019 RPCs, API routes and Flutter screens. Do not label Phase 9 VERIFIED until Supabase Local DB Smoke and V3 CI pass; follow-up needs unread counts/notifications, UX friend picker, edit UI and edge-case review.
+**Automated verification evidence (2026-11-14):**
+- V3 CI passed on commit b208994a: Flutter analyze + API/Admin/Web typecheck and build. Run: https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43627331863
+- Supabase Local DB Smoke passed on commit 9ff24c24 (contains migrations 0018/0019 and messaging API integration tests): migration smoke, RLS identity isolation (17 assertions), and authenticated two-user messaging RPC ownership flow. Run: https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43626902100
+- Migration 0018 private conversation/member/message schema; participant RLS reads and no direct client write policies.
+- Migration 0019 friend-gated conversation open, authenticated send/edit/delete and read marker; actor derived from auth.uid(), block checks applied.
+- API conversation create/list, message listing/send/edit/delete and mark-read routes; Flutter inbox, friend-list chat entry, realtime refresh, send and sender soft-delete.
+- Verification is for this messaging slice only—not full product launch readiness.
+
+**Follow-up UX/product hardening:** friend picker (currently UUID entry in inbox), unread counts/notifications, message edit UI, pagination/edge-case review and moderation integration.
