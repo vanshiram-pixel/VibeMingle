@@ -8,33 +8,11 @@ const responseSchema = z.object({ action: z.enum(["accept", "reject"]) }).strict
 
 function rpcError(reply: any, error: { code?: string; message?: string }) {
   const code = error.code;
-  const message = error.message ?? "";
   if (code === "28000") return reply.code(401).send({ error: { code: "UNAUTHENTICATED", message: "Sign in again." } });
   if (code === "42501") return reply.code(403).send({ error: { code: "REQUEST_UNAVAILABLE", message: "Request is unavailable or access is not allowed." } });
   if (code === "23505") return reply.code(409).send({ error: { code: "REQUEST_CONFLICT", message: "Request is no longer pending or a friendship already exists." } });
   if (code === "22023") return reply.code(400).send({ error: { code: "INVALID_REQUEST", message: "Request action or target is invalid." } });
   return reply.code(400).send({ error: { code: "SOCIAL_ACTION_FAILED", message: "Social action could not be completed." } });
-  app.post("/v1/presence/heartbeat", async (request, reply) => {
-    const { client } = await authenticatedSupabase(request);
-    const { data, error } = await client.rpc("presence_heartbeat");
-    if (error) return rpcError(reply, error);
-    return reply.send({ data });
-  });
-
-  app.patch("/v1/presence/settings", async (request, reply) => {
-    const body = z.object({
-      visibility: z.enum(["everyone", "friends", "nobody"]),
-      showOnline: z.boolean(),
-    }).strict().safeParse(request.body);
-    if (!body.success) return reply.code(400).send({ error: { code: "INVALID_PRESENCE_SETTINGS", message: "Presence settings are invalid." } });
-    const { client } = await authenticatedSupabase(request);
-    const { data, error } = await client.rpc("presence_settings_update", {
-      p_visibility: body.data.visibility, p_show_online: body.data.showOnline,
-    });
-    if (error) return rpcError(reply, error);
-    return reply.send({ data });
-  });
-
 }
 
 export async function registerSocialRoutes(app: FastifyInstance): Promise<void> {
@@ -53,9 +31,7 @@ export async function registerSocialRoutes(app: FastifyInstance): Promise<void> 
     const body = responseSchema.safeParse(request.body);
     if (!params.success || !body.success) return reply.code(400).send({ error: { code: "INVALID_REQUEST", message: "Request id or action is invalid." } });
     const { client } = await authenticatedSupabase(request);
-    const { data, error } = await client.rpc("friend_request_respond", {
-      p_request: params.data.requestId, p_action: body.data.action,
-    });
+    const { data, error } = await client.rpc("friend_request_respond", { p_request: params.data.requestId, p_action: body.data.action });
     if (error) return rpcError(reply, error);
     return reply.send({ data });
   });
@@ -109,6 +85,22 @@ export async function registerSocialRoutes(app: FastifyInstance): Promise<void> 
     if (!params.success) return reply.code(400).send({ error: { code: "INVALID_TARGET", message: "User id is invalid." } });
     const { client } = await authenticatedSupabase(request);
     const { data, error } = await client.rpc("user_block_remove", { p_target: params.data.userId });
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
+  });
+
+  app.post("/v1/presence/heartbeat", async (request, reply) => {
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("presence_heartbeat");
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
+  });
+
+  app.patch("/v1/presence/settings", async (request, reply) => {
+    const body = z.object({ visibility: z.enum(["everyone", "friends", "nobody"]), showOnline: z.boolean() }).strict().safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: { code: "INVALID_PRESENCE_SETTINGS", message: "Presence settings are invalid." } });
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("presence_settings_update", { p_visibility: body.data.visibility, p_show_online: body.data.showOnline });
     if (error) return rpcError(reply, error);
     return reply.send({ data });
   });
