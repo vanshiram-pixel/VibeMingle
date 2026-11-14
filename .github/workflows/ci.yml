@@ -1,0 +1,34 @@
+name: Repository CI
+
+on:
+  push:
+    branches: ["main", "spec/**", "feature/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check whitespace and merge markers
+        shell: bash
+        run: |
+          git diff --check
+          if grep -RInE '^(<<<<<<<|=======|>>>>>>>)' --exclude-dir=.git .; then
+            echo "Merge conflict markers detected"
+            exit 1
+          fi
+      - name: Check tracked secret-like files
+        shell: bash
+        run: |
+          if git ls-files | grep -E '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$|credentials\.json$)'; then
+            echo "Potential secret/credential file tracked"
+            exit 1
+          fi
+      - name: Report scaffold status
+        run: echo "Repository hygiene checks passed. App-specific build/test jobs will be added with each workspace."
