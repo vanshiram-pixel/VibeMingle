@@ -1,0 +1,11 @@
+# Match session security checklist
+- Validate verified adult/age-assurance state and current terms/privacy/age consent for BOTH users.
+- Apply sanction, rate-limit, region/legal and account integrity gates.
+- Check block edges in both directions (A→B and B→A) before queue admission and again atomically at pairing.
+- Atomic queue reservation + session insert + idempotency; one user cannot be assigned to two active sessions.
+- Persist session with participant-only RLS reads; mutations server-only.
+- Mint LiveKit room/token only after persisted session and participant identity authorization.
+- Never accept participant IDs from client as authority; derive caller ID from validated Supabase token.
+- Do not expose queue peers, exact location, moderation metadata or other users' preference profile.
+- Recheck block/report/sanction state at call join and provide immediate report/block/exit.
+- SQL migration is draft; no migration, DB integration, or automated tests have been run yet.
