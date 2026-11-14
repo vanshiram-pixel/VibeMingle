@@ -1,10 +1,52 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../config/app_config.dart';
 import '../calls/video_call_screen.dart';
 import '../friends/friends_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  Timer? _presenceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _sendHeartbeat();
+    _presenceTimer = Timer.periodic(const Duration(seconds: 45), (_) => _sendHeartbeat());
+  }
+
+  Future<void> _sendHeartbeat() async {
+    final token = Supabase.instance.client.auth.currentSession?.accessToken;
+    if (token == null || AppConfig.apiBaseUrl.isEmpty) return;
+    try {
+      await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/v1/presence/heartbeat'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 8));
+    } catch (_) {
+      // Best-effort: missed heartbeat naturally expires online status.
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _sendHeartbeat();
+  }
+
+  @override
+  void dispose() {
+    _presenceTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
