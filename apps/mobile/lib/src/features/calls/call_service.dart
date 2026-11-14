@@ -20,6 +20,16 @@ class CallService {
   if(response.statusCode<200||response.statusCode>=300){final message=body is Map&&body['error'] is Map?body['error']['message']:'Call authorization failed.';throw StateError(message.toString());}
   if(body is! Map<String,dynamic>)throw const FormatException('Invalid call token response');return CallCredentials.fromJson(body);
  }
+ Future<void> report(String sessionId,String category,{String description=''}) async {
+  if(_base.isEmpty)throw StateError('API URL is not configured.');
+  final response=await http.post(Uri.parse('$_base/v1/calls/$sessionId/report'),headers:{'Authorization':'Bearer ${await _accessToken()}','Content-Type':'application/json'},body:jsonEncode({'category':category,'description':description}));
+  if(response.statusCode<200||response.statusCode>=300)throw StateError('Report could not be submitted (${response.statusCode}).');
+ }
+ Future<void> block(String sessionId) async {
+  if(_base.isEmpty)throw StateError('API URL is not configured.');
+  final response=await http.post(Uri.parse('$_base/v1/calls/$sessionId/block'),headers:{'Authorization':'Bearer ${await _accessToken()}','Content-Type':'application/json'},body:'{}');
+  if(response.statusCode<200||response.statusCode>=300)throw StateError('User could not be blocked (${response.statusCode}).');
+ }
  Future<void> leave(String sessionId,{String reason='participant_left'}) async {
   if(_base.isEmpty)throw StateError('API URL is not configured.');
   final response=await http.post(Uri.parse('$_base/v1/calls/$sessionId/leave'),headers:{'Authorization':'Bearer ${await _accessToken()}','Content-Type':'application/json'},body:jsonEncode({'reason':reason}));
