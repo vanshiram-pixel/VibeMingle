@@ -2,7 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { authenticatedSupabase } from "../plugins/supabase-user.js";
 import { LocalMatchQueue } from "../domain/matching/queue.js";
-const queue=new LocalMatchQueue();
+import { eligibleForMatch, pairIsBlocked } from "../domain/matching/eligibility.js";
+const queue=new LocalMatchQueue();\n// Pair-level safety helpers are intentionally not exposed to clients. Production\n// adapter must evaluate both users and block edges inside one DB transaction.
 const preferences=z.object({region:z.string().max(12).optional(),language:z.string().max(12).optional(),interests:z.array(z.string().max(32)).max(10).optional(),genderFilter:z.enum(["any","women","men","other"]).optional()}).strict();
 export async function registerMatchingRoutes(app:FastifyInstance):Promise<void>{
  app.post("/v1/matching/queue",async(request,reply)=>{
