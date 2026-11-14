@@ -39,6 +39,11 @@ suite("local Supabase authenticated API ownership",()=>{
   assert.equal(noAuthFriends.statusCode,401,"friend list must reject missing bearer tokens");
   const noAuthMessages=await app.inject({method:"GET",url:"/v1/conversations"});
   assert.equal(noAuthMessages.statusCode,401,"conversation list must reject missing bearer tokens");
+  const noAuthSend=await app.inject({method:"POST",url:"/v1/conversations/00000000-0000-4000-8000-000000000001/messages",payload:{body:"hello"}});
+  assert.equal(noAuthSend.statusCode,401,"message send must reject missing bearer tokens");
+  const noAuthOpen=await app.inject({method:"POST",url:"/v1/conversations",payload:{friendId:"00000000-0000-4000-8000-000000000001"}});
+  assert.equal(noAuthOpen.statusCode,401,"conversation creation must reject missing bearer tokens");
+  assert.equal(noAuthMessages.statusCode,401,"conversation list must reject missing bearer tokens");
   const noAuthHeartbeat=await app.inject({method:"POST",url:"/v1/presence/heartbeat"});
   assert.equal(noAuthHeartbeat.statusCode,401,"presence heartbeat must reject missing bearer tokens");
   const suffix=`${Date.now()}-${Math.random().toString(16).slice(2)}`;
