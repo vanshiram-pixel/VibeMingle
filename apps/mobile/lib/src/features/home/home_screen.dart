@@ -69,8 +69,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         const Text('Welcome to VibeMingle'),
         const SizedBox(height: 24),
         SizedBox(width: double.infinity, child: FilledButton.icon(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VideoCallScreen())),
-          icon: const Icon(Icons.video_call), label: const Text('Open call UI preview'),
+          onPressed: null,
+          icon: const Icon(Icons.video_call), label: const Text('Random video matching — coming soon'),
         )),
         const SizedBox(height: 12),
         SizedBox(width: double.infinity, child: OutlinedButton.icon(
