@@ -25,7 +25,7 @@ export const env = {
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   livekitUrl: process.env.LIVEKIT_URL,
   livekitApiKey: process.env.LIVEKIT_API_KEY,
-  livekitApiSecret: process.env.LIVEKIT_API_SECRET,
+  livekitApiSecret: process.env.LIVEKIT_API_SECRET,\n  openaiApiKey: process.env.OPENAI_API_KEY,\n  aiTranslationEnabled: process.env.AI_TRANSLATION_ENABLED === "true",\n  aiTranslationModel: process.env.AI_TRANSLATION_MODEL ?? "gpt-4o-mini",
 } as const;
 
 export function assertProductionSecrets(): void {
