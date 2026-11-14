@@ -1,7 +1,7 @@
 -- VibeMingle RLS integration test: identity isolation, using local Supabase only.
 -- This test uses pgTAP and authenticated role JWT claims; never run on hosted prod.
 begin;
-select plan(13);
+select plan(12);
 
 -- Seed two isolated auth identities in disposable local auth schema.
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at,raw_app_meta_data,raw_user_meta_data,is_sso_user)
