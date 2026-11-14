@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 const ai=await readFile(new URL("../src/routes/ai.ts",import.meta.url),"utf8");
 const consent=await readFile(new URL("../src/routes/ai-consent.ts",import.meta.url),"utf8");
 const migration=await readFile(new URL("../../../supabase/migrations/0020_ai_translation_consent.sql",import.meta.url),"utf8");
+const quota=await readFile(new URL("../../../supabase/migrations/0021_ai_translation_daily_quota.sql",import.meta.url),"utf8");
 test("AI translation is opt-in, bounded and backend-keyed",()=>{
  assert.match(ai,/authenticatedSupabase/);assert.match(ai,/ai_translation/);assert.match(ai,/aiTranslationEnabled/);
  assert.match(ai,/max\(4000\)/);assert.match(ai,/AI_RATE_LIMIT/);assert.match(ai,/AbortController/);
@@ -16,4 +17,9 @@ test("AI consent endpoint supports status and immutable grant/withdraw history",
 test("AI usage ledger never stores source or translated content",()=>{
  assert.match(migration,/input_chars/);assert.match(migration,/output_chars/);assert.doesNotMatch(migration,/translated_text|source_text|message_body/);
  assert.match(migration,/enable row level security/i);assert.match(migration,/revoke all.*authenticated/i);
+});
+test("AI daily quota is atomic, bounded, and service-role only",()=>{
+ assert.match(ai,/consume_ai_translation_quota/);assert.match(ai,/AI_DAILY_LIMIT/);assert.match(ai,/AI_METERING_FAILED/);
+ assert.match(quota,/requests < 30/);assert.match(quota,/input_chars\+p_input_chars <= 30000/);
+ assert.match(quota,/security definer/i);assert.match(quota,/revoke all on function.*authenticated/i);
 });
