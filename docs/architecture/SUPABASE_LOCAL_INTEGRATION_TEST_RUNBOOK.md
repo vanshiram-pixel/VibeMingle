@@ -1,7 +1,7 @@
 # Supabase Local Integration Test Runbook (VibeMingle)
 
 Branch: `spec/v3-integrated-master-draft`
-Status: local test harness instructions; not a claim that local Docker tests have already run.
+Status: local CI harness is implemented and verified; broader API/security coverage remains pending.
 
 ## Purpose
 Validate migrations 0001–0017 and RLS using a disposable local Supabase/Postgres stack. Never point this at production.
@@ -20,8 +20,11 @@ Validate migrations 0001–0017 and RLS using a disposable local Supabase/Postgr
 5. Validate migration state: `supabase migration list`.
 6. Stop local stack when finished: `supabase stop`.
 
-## Current repo caveat
-At audit time the Supabase directory contains migrations and a README but no `supabase/config.toml` and no executable pgTAP SQL tests. Thus `supabase start/db reset` may not work until CLI config and local test harness are added. Do not infer successful DB validation from static API tests.
+## Current verified state
+- GitHub Actions workflow `.github/workflows/supabase-local.yml` starts disposable local Supabase, resets/replays migrations 0001–0017, runs SQL smoke test 0018 and authenticated RLS test 0019, then stops the stack.
+- Verified PASS at commit `0f118686`: [Supabase Local DB Smoke run](https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43601066824).
+- Test 0019 uses native SQL assertions (no pgTAP extension dependency) and transaction rollback; it checks 12 identity/privacy conditions.
+- The test is limited coverage, not full API/IDOR/security or hosted-production verification.
 
 ## Required database checks (test-only users)
 - Migration replay from empty database succeeds, including functions/grants.
@@ -40,5 +43,5 @@ At audit time the Supabase directory contains migrations and a README but no `su
 - CLI version, migration list, command exit codes, test suite result, sanitized logs, date and commit SHA.
 - Never store keys, access tokens, user data or raw production logs in artifacts.
 
-## CI integration next
-Use a dedicated local Supabase GitHub Actions job with Docker/service support and disposable database. Pin CLI version; run `supabase start`, `supabase db reset`, SQL tests and API integration tests, then stop services. Add only after config and tests are present. This document alone does not create that workflow.
+## CI integration and next coverage
+The local database workflow is active and pinned to Supabase CLI 2.54.11. Next add API-level tests for IDOR, authorization/AAL2, matching/block race conditions, rate limits, audit atomicity and sanctions. Hosted Supabase remains untouched.
