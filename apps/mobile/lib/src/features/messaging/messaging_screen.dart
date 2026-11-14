@@ -6,9 +6,9 @@ class MessagingScreen extends StatefulWidget {
  @override State<MessagingScreen> createState()=>_MessagingScreenState();
 }
 class _MessagingScreenState extends State<MessagingScreen>{
- final _db=Supabase.instance.client; late Future<List<Map<String,dynamic>> _future;
+ final _db=Supabase.instance.client; late Future<List<Map<String,dynamic>>> _future;
  @override void initState(){super.initState();_future=_load();}
- Future<List<Map<String,dynamic>> _load() async {
+ Future<List<Map<String,dynamic>>> _load() async {
   final uid=_db.auth.currentUser!.id;
   final rows=await _db.from('conversation_members').select('conversation_id,last_read_at,conversations(id,user_a,user_b,updated_at)').eq('user_id',uid).order('last_read_at',ascending:false);
   return List<Map<String,dynamic>>.from(rows);
@@ -20,7 +20,7 @@ class _MessagingScreenState extends State<MessagingScreen>{
   try{final conversation=await _db.rpc('conversation_open',params:{'p_friend':id});if(!mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>ConversationScreen(conversationId:conversation.toString()))).then((_)=>setState(()=>_future=_load()));}
   catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Chat नहीं खुला: $e')));}
  }
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Messages'),actions:[IconButton(onPressed:_openFriend,icon:const Icon(Icons.add_comment),tooltip:'New chat')]),body:FutureBuilder<List<Map<String,dynamic>>(future:_future,builder:(c,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator());if(s.hasError)return Center(child:Text('Messages load नहीं हुए: ${s.error}'));final rows=s.data??[];if(rows.isEmpty)return const Center(child:Text('अभी कोई chat नहीं। + से friend chat खोलें।'));return ListView.builder(itemCount:rows.length,itemBuilder:(c,i){final conv=rows[i]['conversations'] as Map<String,dynamic>?;final uid=_db.auth.currentUser!.id;final peer=conv==null?'Friend':(conv['user_a']==uid?conv['user_b']:conv['user_a']);return ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text('Friend • ${peer.toString().substring(0,8)}…'),subtitle:const Text('Private conversation'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>ConversationScreen(conversationId:rows[i]['conversation_id'].toString()))).then((_)=>setState(()=>_future=_load()));});}));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Messages'),actions:[IconButton(onPressed:_openFriend,icon:const Icon(Icons.add_comment),tooltip:'New chat')]),body:FutureBuilder<List<Map<String,dynamic>>>(future:_future,builder:(c,s){if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator());if(s.hasError)return Center(child:Text('Messages load नहीं हुए: ${s.error}'));final rows=s.data??[];if(rows.isEmpty)return const Center(child:Text('अभी कोई chat नहीं। + से friend chat खोलें।'));return ListView.builder(itemCount:rows.length,itemBuilder:(c,i){final conv=rows[i]['conversations'] as Map<String,dynamic>?;final uid=_db.auth.currentUser!.id;final peer=conv==null?'Friend':(conv['user_a']==uid?conv['user_b']:conv['user_a']);return ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text('Friend • ${peer.toString().substring(0,8)}…'),subtitle:const Text('Private conversation'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>ConversationScreen(conversationId:rows[i]['conversation_id'].toString()))).then((_)=>setState(()=>_future=_load()));});}));
 }
 }
 
