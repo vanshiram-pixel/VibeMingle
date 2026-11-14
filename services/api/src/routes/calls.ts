@@ -20,13 +20,19 @@ async function enforceCallSanction(db:any,userId:string,reply:any):Promise<boole
  const now=Date.now();const blocked=(data??[]).some((s:any)=>s.sanction_type==="permanent_ban"||!s.expires_at||new Date(s.expires_at).getTime()>now);
  if(blocked)reply.code(403).send({error:{code:"ACCOUNT_SUSPENDED",message:"This account is restricted from calls."}});return !blocked;
 }
+async function requireAdminAal2(request:any,reply:any):Promise<{user:{id:string;accessToken:string};client:any}|null>{
+ const auth=await authenticatedSupabase(request);
+ const {data,error}=await auth.client.auth.mfa.getAuthenticatorAssuranceLevel();
+ if(error||data?.currentLevel!=="aal2"){reply.code(403).send({error:{code:"ADMIN_MFA_REQUIRED",message:"Admin actions require verified MFA (AAL2)."}});return null;}
+ return auth;
+}
 function adminDb(){
  if(!env.supabaseUrl||!env.supabaseServiceRoleKey) throw new Error("Server database credentials are not configured");
  return createClient(env.supabaseUrl,env.supabaseServiceRoleKey,{auth:{persistSession:false,autoRefreshToken:false}});
 }
 export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
  app.get("/v1/admin/moderation/reports",async(request,reply)=>{
-  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
   const query=z.object({status:z.enum(["submitted","triaged","investigating","actioned","dismissed"]).optional(),limit:z.coerce.number().int().min(1).max(100).optional()}).safeParse(request.query);
   if(!query.success)return reply.code(400).send({error:{code:"INVALID_QUERY",message:"Report filters are invalid."}});
@@ -38,7 +44,7 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
  app.patch("/v1/admin/moderation/reports/:reportId",async(request,reply)=>{
   const params=z.object({reportId:z.string().uuid()}).safeParse(request.params);const body=moderationStatusSchema.safeParse(request.body);
   if(!params.success||!body.success)return reply.code(400).send({error:{code:"INVALID_MODERATION_ACTION",message:"Report action is invalid."}});
-  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
   const {data:report}=await db.from("user_reports").select("reported_user_id").eq("id",params.data.reportId).maybeSingle();
   if(!report)return reply.code(404).send({error:{code:"REPORT_NOT_FOUND",message:"Report not found."}});
@@ -48,7 +54,7 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   return reply.send({updated:true,status:body.data.status});
  });
  app.get("/v1/admin/moderation/audit",async(request,reply)=>{
-  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
   const parsed=z.object({limit:z.coerce.number().int().min(1).max(100).optional()}).safeParse(request.query);
   if(!parsed.success)return reply.code(400).send({error:{code:"INVALID_QUERY",message:"Audit filters are invalid."}});
@@ -59,7 +65,7 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
  app.patch("/v1/admin/moderation/sanctions/:sanctionId/revoke",async(request,reply)=>{
   const params=z.object({sanctionId:z.string().uuid()}).safeParse(request.params);
   if(!params.success)return reply.code(400).send({error:{code:"INVALID_SANCTION",message:"Sanction id is invalid."}});
-  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   const {data:role}=await db.from("admin_roles").select("role").eq("user_id",user.id).eq("enabled",true).maybeSingle();
   if(!role||!["admin","superadmin"].includes(role.role))return reply.code(403).send({error:{code:"SANCTION_REVOKE_FORBIDDEN",message:"Admin access required."}});
   const {data,error}=await db.from("user_sanctions").update({active:false}).eq("id",params.data.sanctionId).eq("active",true).select("id,user_id,sanction_type").maybeSingle();
@@ -70,7 +76,7 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   return reply.send({revoked:true,id:data.id});
  });
  app.get("/v1/admin/moderation/sanctions",async(request,reply)=>{
-  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
   const query=z.object({limit:z.coerce.number().int().min(1).max(100).optional()}).safeParse(request.query);
   if(!query.success)return reply.code(400).send({error:{code:"INVALID_QUERY",message:"Sanction filter invalid."}});
@@ -80,7 +86,7 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
  });
  app.post("/v1/admin/moderation/sanctions",async(request,reply)=>{
   const body=sanctionSchema.safeParse(request.body);if(!body.success)return reply.code(400).send({error:{code:"INVALID_SANCTION",message:"Sanction details are invalid."}});
-  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
   if(body.data.type==="permanent_ban"&&!((await db.from("admin_roles").select("role").eq("user_id",user.id).eq("enabled",true).maybeSingle()).data?.role==="superadmin"))return reply.code(403).send({error:{code:"BAN_FORBIDDEN",message:"Only superadmins can issue permanent bans."}});
   const expiresAt=body.data.type==="temporary_suspension"&&body.data.durationHours?new Date(Date.now()+body.data.durationHours*3600000).toISOString():null;
