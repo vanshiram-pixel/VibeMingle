@@ -88,7 +88,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     try { await _service.report(widget.sessionId,category); if(mounted)_show('Report submitted. Thank you.'); }
     catch(e){if(mounted)_show(e.toString());}
   }
-\n  Future<void> _end() async {
+
+  Future<void> _end() async {
     if (_leaving) return;
     setState(() => _leaving = true);
     try { await _room?.disconnect(); await _service.leave(widget.sessionId); }
