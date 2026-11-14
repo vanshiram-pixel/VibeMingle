@@ -13,7 +13,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   final _service = CallService();
   Room? _room;
   EventsListener<RoomEvent>? _listener;
-  bool _connecting = true, _mic = true, _camera = true, _leaving = false, _reconnecting = false;
+  bool _connecting = true, _mic = true, _camera = true, _leaving = false, _reconnecting = false, _connected = false;
   String? _error;
 
   @override
@@ -27,7 +27,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       _listener!
         ..on<RoomReconnectingEvent>((_) { if (mounted) setState(() => _reconnecting = true); })
         ..on<RoomResumingEvent>((_) { if (mounted) setState(() => _reconnecting = true); })
-        ..on<RoomReconnectedEvent>((_) { if (mounted) setState(() => _reconnecting = false); })
+        ..on<RoomReconnectedEvent>((_) { if (mounted) setState(() { _reconnecting = false; _connected = true; }); })
         ..on<ParticipantConnectedEvent>((_) { if (mounted) setState(() {}); })
         ..on<ParticipantDisconnectedEvent>((_) { if (mounted) setState(() {}); })
         ..on<TrackSubscribedEvent>((_) { if (mounted) setState(() {}); })
@@ -37,7 +37,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       await room.localParticipant?.setMicrophoneEnabled(true);
       await room.localParticipant?.setCameraEnabled(true);
       if (!mounted) { await room.disconnect(); return; }
-      setState(() => _room = room);
+      setState(() { _room = room; _connected = true; });
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -124,7 +124,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     final localTrack = _localTrack();
     return Scaffold(
       backgroundColor: const Color(0xFF090912),
-      appBar: AppBar(title: const Text('VibeMingle call'), backgroundColor: Colors.transparent, actions:[IconButton(tooltip:'Report',onPressed:_leaving?null:_report,icon:const Icon(Icons.flag_outlined)),IconButton(tooltip:'Block',onPressed:_leaving?null:_block,icon:const Icon(Icons.block))]),
+      appBar: AppBar(title: Row(mainAxisSize: MainAxisSize.min, children: [const Text('VibeMingle call'), const SizedBox(width: 10), Icon(_reconnecting ? Icons.wifi_off : _connected ? Icons.wifi : Icons.wifi_find, size: 18, color: _reconnecting ? Colors.orange : _connected ? Colors.greenAccent : Colors.grey), const SizedBox(width: 4), Text(_reconnecting ? 'Reconnecting' : _connected ? 'Connected' : 'Connecting', style: const TextStyle(fontSize: 12))]), backgroundColor: Colors.transparent, actions:[IconButton(tooltip:'Report',onPressed:_leaving?null:_report,icon:const Icon(Icons.flag_outlined)),IconButton(tooltip:'Block',onPressed:_leaving?null:_block,icon:const Icon(Icons.block))]),
       body: SafeArea(child: Column(children: [
         Expanded(child: _connecting
           ? const Center(child: CircularProgressIndicator())
