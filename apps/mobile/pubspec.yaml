@@ -8,6 +8,7 @@ dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^2.10.0
+  flutter_riverpod: ^2.6.1
   livekit_client: ^2.13.2
   flutter_dotenv: ^5.2.1
   http: ^1.2.2
