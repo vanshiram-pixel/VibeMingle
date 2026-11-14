@@ -55,3 +55,10 @@ test("AI translation errors do not expose provider response bodies",()=>{
  assert.match(ai,/AI_TIMEOUT/);
  assert.doesNotMatch(ai,/response\.text\(\).*reply|payload\.error\.message/);
 });
+
+
+test("AI in-process rate limiter prunes expired user windows",()=>{
+ assert.match(ai,/rateLimitCleanupCounter%128===0/);
+ assert.match(ai,/now-value\.start>=60_000/);
+ assert.match(ai,/windows\.delete\(key\)/);
+});
