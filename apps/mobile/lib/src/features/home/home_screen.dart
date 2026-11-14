@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/app_config.dart';
 import '../calls/video_call_screen.dart';
 import '../friends/friends_screen.dart';
+import '../matching/matching_screen.dart';
 import '../profile/edit_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -69,8 +70,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         const Text('Welcome to VibeMingle'),
         const SizedBox(height: 24),
         SizedBox(width: double.infinity, child: FilledButton.icon(
-          onPressed: null,
-          icon: const Icon(Icons.video_call), label: const Text('Random video matching — coming soon'),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MatchingScreen())),
+          icon: const Icon(Icons.video_call), label: const Text('Random video matching'),
         )),
         const SizedBox(height: 12),
         SizedBox(width: double.infinity, child: OutlinedButton.icon(
