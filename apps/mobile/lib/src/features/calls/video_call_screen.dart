@@ -25,11 +25,11 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       final room = Room();
       _listener = room.createListener();
       _listener!
-        ..on<ParticipantConnected>((_) { if (mounted) setState(() {}); })
-        ..on<ParticipantDisconnected>((_) { if (mounted) setState(() {}); })
-        ..on<TrackSubscribed>((_) { if (mounted) setState(() {}); })
-        ..on<TrackUnsubscribed>((_) { if (mounted) setState(() {}); })
-        ..on<TrackPublished>((_) { if (mounted) setState(() {}); });
+        ..on<ParticipantConnectedEvent>((_) { if (mounted) setState(() {}); })
+        ..on<ParticipantDisconnectedEvent>((_) { if (mounted) setState(() {}); })
+        ..on<TrackSubscribedEvent>((_) { if (mounted) setState(() {}); })
+        ..on<TrackUnsubscribedEvent>((_) { if (mounted) setState(() {}); })
+        ..on<TrackPublishedEvent>((_) { if (mounted) setState(() {}); });
       await room.connect(credentials.url, credentials.token);
       await room.localParticipant?.setMicrophoneEnabled(true);
       await room.localParticipant?.setCameraEnabled(true);
@@ -46,7 +46,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     final room = _room;
     if (room == null) return null;
     for (final participant in room.remoteParticipants.values) {
-      for (final publication in participant.videoTrackPublications.values) {
+      for (final publication in participant.videoTrackPublications) {
         final track = publication.track;
         if (track is VideoTrack && publication.subscribed) return track;
       }
