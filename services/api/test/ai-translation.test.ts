@@ -101,3 +101,19 @@ test("AI translation records usage only after a valid provider result",()=>{
  assert.ok(providerCall>0 && meter>providerCall && meterInsert>meter && response>meterInsert);
  assert.match(ai,/if\(meterError\)return reply\.code\(503\)/);
 });
+
+
+test("AI global daily budget is atomic and checked before provider spend",()=>{
+ assert.match(ai,/consume_ai_translation_global_limit/);
+ assert.match(ai,/AI_GLOBAL_DAILY_LIMIT/);
+ assert.match(ai,/AI_GLOBAL_LIMIT_UNAVAILABLE/);
+ const quota=ai.indexOf("consume_ai_translation_quota");
+ const global=ai.indexOf("consume_ai_translation_global_limit");
+ const providerCall=ai.indexOf("requestTranslation(");
+ assert.ok(quota>0 && global>quota && providerCall>global);
+ const budget=readFile(new URL("../../../supabase/migrations/0023_ai_translation_global_daily_budget.sql",import.meta.url),"utf8");
+ assert.match(budget,/primary key/i);assert.match(budget,/requests < p_daily_limit/);
+ assert.match(budget,/timezone/i);assert.match(budget,/utc/i);
+ assert.match(budget,/grant execute on function public\\.consume_ai_translation_global_limit\\(integer\\) to service_role/i);
+ assert.match(budget,/enable row level security/i);
+});
