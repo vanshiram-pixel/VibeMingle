@@ -14,6 +14,11 @@ begin
   if to_regclass('public.user_sanctions') is null then raise exception 'user_sanctions missing'; end if;
   if to_regclass('public.moderation_audit_log') is null then raise exception 'moderation_audit_log missing'; end if;
   if to_regclass('public.api_rate_limits') is null then raise exception 'api_rate_limits missing'; end if;
+  if to_regclass('public.conversations') is null then raise exception 'conversations missing'; end if;
+  if to_regclass('public.conversation_members') is null then raise exception 'conversation_members missing'; end if;
+  if to_regclass('public.messages') is null then raise exception 'messages missing'; end if;
+  if not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname='messages' and c.relrowsecurity) then raise exception 'messages RLS disabled'; end if;
+  if exists(select 1 from pg_policies where schemaname='public' and tablename='messages' and cmd in ('INSERT','ALL')) then raise exception 'direct message writes must remain disabled'; end if;
   if not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='consume_api_rate_limit') then raise exception 'rate limit RPC missing'; end if;
   if not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='moderation_update_report_with_audit') then raise exception 'audit RPC missing'; end if;
   if not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname='profiles' and c.relrowsecurity) then raise exception 'profiles RLS disabled'; end if;
