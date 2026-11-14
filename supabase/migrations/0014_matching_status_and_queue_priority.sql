@@ -3,7 +3,7 @@
 create or replace function public.matching_queue_status(p_user uuid)
 returns table(status text,session_id uuid,partner_id uuid)
 language sql security definer set search_path=''
-as $
+as $$
  with active as (
   select s.id,case when s.participant_a=p_user then s.participant_b else s.participant_a end partner
   from public.match_sessions s where (s.participant_a=p_user or s.participant_b=p_user) and s.status in ('created','active')
@@ -15,7 +15,7 @@ as $
  union all select 'idle'::text,null::uuid,null::uuid
  where not exists(select 1 from public.match_queue q where q.user_id=p_user) and not exists(select 1 from active)
  limit 1;
-$;
+$$;
 revoke all on function public.matching_queue_status(uuid) from public,anon,authenticated;
 grant execute on function public.matching_queue_status(uuid) to service_role;
 
