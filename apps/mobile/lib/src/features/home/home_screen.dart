@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/app_config.dart';
-import '../calls/video_call_screen.dart';
 import '../friends/friends_screen.dart';
 import '../matching/matching_screen.dart';
 import '../profile/edit_profile_screen.dart';
