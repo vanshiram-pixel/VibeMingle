@@ -7,7 +7,8 @@ import { registerSocialRoutes } from "../src/routes/social.js";
 import { registerCallRoutes } from "../src/routes/calls.js";
 
 async function testApp(){
- const app=Fastify({logger:false});\n app.setErrorHandler((error,request,reply)=>reply.code((error as any).statusCode??500).send({error:{code:"REQUEST_ERROR"}}));
+ const app=Fastify({logger:false});
+ app.setErrorHandler((error,request,reply)=>reply.code((error as any).statusCode??500).send({error:{code:"REQUEST_ERROR"}}));
  await app.register(registerMeRoutes);
  await app.register(registerMatchingRoutes);
  await app.register(registerSocialRoutes);
