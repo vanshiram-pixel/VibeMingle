@@ -47,6 +47,20 @@ class _AiConsentScreenState extends State<AiConsentScreen> {
   }
 
   Future<void> _setConsent(bool granted) async {
+    if (granted) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('AI translation consent'),
+          content: const Text('आपका चुना हुआ text अनुवाद के लिए बाहरी AI provider को भेजा जाएगा। Message text VibeMingle में सेव नहीं होता, लेकिन provider processing के दौरान इसे प्राप्त करेगा। केवल तभी अनुमति दें जब आप सहमत हों।'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('I agree')),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
     setState(() { _saving = true; _message = null; _translation = null; });
     try {
       final response = await http.put(Uri.parse('${AppConfig.apiBaseUrl}/v1/ai/consent'), headers: _headers, body: jsonEncode({'granted': granted, 'policyVersion': 'ai-translation-v1'})).timeout(const Duration(seconds: 10));
