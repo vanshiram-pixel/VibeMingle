@@ -37,7 +37,8 @@ class _AiConsentScreenState extends State<AiConsentScreen> {
       final response = await http.get(Uri.parse('${AppConfig.apiBaseUrl}/v1/ai/consent'), headers: _headers).timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) throw Exception();
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final consent = data['data'] as Map<String, dynamic>?;\n      if (mounted) setState(() => _granted = consent?['granted'] == true && consent?['withdrawn_at'] == null);
+      final consent = data['data'] as Map<String, dynamic>?;
+      if (mounted setState(() => _granted = consent?['granted'] == true && consent?['withdrawn_at'] == null);
     } catch (_) {
       if (mounted) setState(() => _message = 'Consent status नहीं मिल पाया। API/server जाँचें।');
     } finally {
