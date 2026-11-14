@@ -13,6 +13,7 @@ import { registerAuthRoutes } from "../src/routes/auth.js";
 import { registerMatchingRoutes } from "../src/routes/matching.js";
 import { registerSocialRoutes } from "../src/routes/social.js";
 import { registerCallRoutes } from "../src/routes/calls.js";
+import { registerMessagingRoutes } from "../src/routes/messaging.js";
 
 const enabled=process.env.SUPABASE_LOCAL_INTEGRATION==="1";
 const url=process.env.SUPABASE_URL??"";
@@ -29,13 +30,15 @@ suite("local Supabase authenticated API ownership",()=>{
   app.setErrorHandler((error,request,reply)=>reply.code(error instanceof Error&&"statusCode" in error?Number((error as {statusCode:number}).statusCode):500).send({error:{message:"request failed"}}));
   await app.register(registerAuthRoutes); await app.register(registerMeRoutes);
   await app.register(registerOnboardingRoutes); await app.register(registerMatchingRoutes);
-  await app.register(registerSocialRoutes); await app.register(registerCallRoutes);
+  await app.register(registerSocialRoutes); await app.register(registerCallRoutes); await app.register(registerMessagingRoutes);
   const noAuthRead=await app.inject({method:"GET",url:"/v1/me"});
   assert.equal(noAuthRead.statusCode,401,"/v1/me must reject missing bearer tokens");
   const noAuthWrite=await app.inject({method:"PATCH",url:"/v1/me/profile",payload:{display_name:"Unauthenticated Name"}});
   assert.equal(noAuthWrite.statusCode,401,"/v1/me/profile must reject missing bearer tokens");
   const noAuthFriends=await app.inject({method:"GET",url:"/v1/friends"});
   assert.equal(noAuthFriends.statusCode,401,"friend list must reject missing bearer tokens");
+  const noAuthMessages=await app.inject({method:"GET",url:"/v1/conversations"});
+  assert.equal(noAuthMessages.statusCode,401,"conversation list must reject missing bearer tokens");
   const noAuthHeartbeat=await app.inject({method:"POST",url:"/v1/presence/heartbeat"});
   assert.equal(noAuthHeartbeat.statusCode,401,"presence heartbeat must reject missing bearer tokens");
   const suffix=`${Date.now()}-${Math.random().toString(16).slice(2)}`;
