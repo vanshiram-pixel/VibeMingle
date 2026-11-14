@@ -104,6 +104,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             : Stack(
                 fit: StackFit.expand,
                 children: [
+                  if (_reconnecting)
+                    const Positioned(top: 12, left: 12, right: 12, child: Material(color: Colors.orange, borderRadius: BorderRadius.all(Radius.circular(10)), child: Padding(padding: EdgeInsets.all(10), child: Text('Reconnecting… please wait', textAlign: TextAlign.center, style: TextStyle(color: Colors.black))))),
                   if (track != null)
                     ClipRRect(borderRadius: BorderRadius.circular(18), child: VideoTrackRenderer(track))
                   else
