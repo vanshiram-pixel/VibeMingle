@@ -10,8 +10,6 @@ as $$
    and not exists(select 1 from public.user_blocks b
       where (b.blocker_id=auth.uid() and b.blocked_id=p.id)
          or (b.blocker_id=p.id and b.blocked_id=auth.uid()))
-   and not exists(select 1 from public.user_sanctions s
-      where s.user_id=p.id and s.status='active')
  order by p.display_name asc
  limit greatest(1,least(coalesce(p_limit,20),30));
 $$;
