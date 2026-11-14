@@ -62,3 +62,11 @@ test("AI in-process rate limiter prunes expired user windows",()=>{
  assert.match(ai,/now-value\.start>=60_000/);
  assert.match(ai,/windows\.delete\(key\)/);
 });
+
+test("AI quota uses UTC day buckets and rejects invalid character counts",()=>{
+ assert.match(quota,/timezone\('utc', now\(\)\)::date/i);
+ assert.match(quota,/primary key\(user_id,quota_date\)/i);
+ assert.match(quota,/p_input_chars < 1 or p_input_chars > 4000/i);
+ assert.match(quota,/input_chars\+p_input_chars <= 30000/i);
+ assert.match(quota,/grant execute on function public\.consume_ai_translation_quota\(uuid,integer\) to service_role/i);
+});
