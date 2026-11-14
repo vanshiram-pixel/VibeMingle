@@ -5,6 +5,7 @@ import { registerAuthRoutes } from "./routes/auth.js";
 import { registerMeRoutes } from "./routes/me.js";
 import { registerOnboardingRoutes } from "./routes/onboarding.js";
 import { registerMatchingRoutes } from "./routes/matching.js";
+import { registerSocialRoutes } from "./routes/social.js";
 
 const app = Fastify({
   logger: { level: env.logLevel },
@@ -16,6 +17,7 @@ await app.register(registerAuthRoutes);
 await app.register(registerMeRoutes);
 await app.register(registerOnboardingRoutes);
 await app.register(registerMatchingRoutes);
+await app.register(registerSocialRoutes);
 
 app.get("/health", async () => createHealthResponse(env.appVersion));
 app.get("/ready", async (_request, reply) => {
