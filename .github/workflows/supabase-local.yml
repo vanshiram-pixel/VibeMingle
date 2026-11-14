@@ -1,12 +1,16 @@
 name: Supabase Local DB Smoke
 
 on:
+  workflow_dispatch:
   push:
     branches: [spec/v3-integrated-master-draft]
     paths:
       - "supabase/migrations/**"
       - "supabase/tests/**"
       - "supabase/config.toml"
+      - "services/api/**"
+      - "package.json"
+      - "services/api/package.json"
       - ".github/workflows/supabase-local.yml"
   pull_request:
     paths:
