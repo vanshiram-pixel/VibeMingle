@@ -26,6 +26,10 @@ async function requireAdminAal2(request:any,reply:any):Promise<{user:{id:string;
  if(error||data?.currentLevel!=="aal2"){reply.code(403).send({error:{code:"ADMIN_MFA_REQUIRED",message:"Admin actions require verified MFA (AAL2)."}});return null;}
  return auth;
 }
+async function consumeRateLimit(db:any,userId:string,action:string,limit:number,windowSeconds:number):Promise<boolean|null>{
+ const {data,error}=await db.rpc("consume_api_rate_limit",{p_bucket_key:userId+":"+action,p_limit:limit,p_window_seconds:windowSeconds});
+ if(error)return null;return data===true;
+}
 function adminDb(){
  if(!env.supabaseUrl||!env.supabaseServiceRoleKey) throw new Error("Server database credentials are not configured");
  return createClient(env.supabaseUrl,env.supabaseServiceRoleKey,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -122,6 +126,7 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   const params=z.object({sessionId:z.string().uuid()}).safeParse(request.params);const body=reportSchema.safeParse(request.body);
   if(!params.success||!body.success)return reply.code(400).send({error:{code:"INVALID_REPORT",message:"Report details are invalid."}});
   const {user}=await authenticatedSupabase(request);const db=adminDb();
+  const rate=await consumeRateLimit(db,user.id,"call_report",5,600);if(rate===null)return reply.code(503).send({error:{code:"RATE_LIMIT_UNAVAILABLE",message:"Report protection is unavailable; try again later."}});if(!rate)return reply.code(429).send({error:{code:"REPORT_RATE_LIMIT",message:"Too many reports. Try again in 10 minutes."}});
   const {data:session,error:sessionError}=await db.from("match_sessions").select("participant_a,participant_b").eq("id",params.data.sessionId).maybeSingle();
   if(sessionError||!session)return reply.code(404).send({error:{code:"SESSION_NOT_FOUND",message:"Call session not found."}});
   const target=session.participant_a===user.id?session.participant_b:session.participant_b===user.id?session.participant_a:null;
@@ -134,6 +139,7 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   const params=z.object({sessionId:z.string().uuid()}).safeParse(request.params);
   if(!params.success)return reply.code(400).send({error:{code:"INVALID_SESSION",message:"Session id is invalid."}});
   const {user,client}=await authenticatedSupabase(request);const db=adminDb();
+  const rate=await consumeRateLimit(db,user.id,"call_block",20,86400);if(rate===null)return reply.code(503).send({error:{code:"RATE_LIMIT_UNAVAILABLE",message:"Block protection is unavailable; try again later."}});if(!rate)return reply.code(429).send({error:{code:"BLOCK_RATE_LIMIT",message:"Too many block requests. Try again later."}});
   const {data:session,error}=await db.from("match_sessions").select("participant_a,participant_b").eq("id",params.data.sessionId).maybeSingle();
   if(error||!session)return reply.code(404).send({error:{code:"SESSION_NOT_FOUND",message:"Call session not found."}});
   const target=session.participant_a===user.id?session.participant_b:session.participant_b===user.id?session.participant_a:null;
