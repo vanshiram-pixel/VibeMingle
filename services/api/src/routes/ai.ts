@@ -6,7 +6,8 @@ import { env } from "../config/env.js";
 const schema=z.object({text:z.string().trim().min(1).max(4000),targetLanguage:z.string().regex(/^[a-z]{2,3}(-[A-Z]{2})?$/)}).strict();
 const allowed=new Set(["en","hi","es","fr","de","pt","ar","ja","ko","zh","ru","it","id","bn","ur","tr","th","vi"]);
 const windows=new Map<string,{start:number,count:number}>();
-function allow(user:string){const now=Date.now(),w=windows.get(user);if(!w||now-w.start>=60_000){windows.set(user,{start:now,count:1});return true;}if(w.count>=8)return false;w.count++;return true;}
+let rateLimitCleanupCounter=0;
+function allow(user:string){const now=Date.now();if(++rateLimitCleanupCounter%128===0){for(const [key,value] of windows)if(now-value.start>=60_000)windows.delete(key);}const w=windows.get(user);if(!w||now-w.start>=60_000){windows.set(user,{start:now,count:1});return true;}if(w.count>=8)return false;w.count++;return true;}
 export async function registerAiRoutes(app:FastifyInstance){
  app.post("/v1/ai/translate",async(request,reply)=>{
   const parsed=schema.safeParse(request.body);if(!parsed.success||!allowed.has(parsed.data?.targetLanguage??""))return reply.code(400).send({error:{code:"INVALID_TRANSLATION",message:"Text or target language is invalid."}});
