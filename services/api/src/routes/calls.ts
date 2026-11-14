@@ -69,6 +69,15 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   if(auditError)return reply.code(503).send({error:{code:"AUDIT_WRITE_FAILED",message:"Sanction revoked but audit write failed; investigate immediately."}});
   return reply.send({revoked:true,id:data.id});
  });
+ app.get("/v1/admin/moderation/sanctions",async(request,reply)=>{
+  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
+  const query=z.object({limit:z.coerce.number().int().min(1).max(100).optional()}).safeParse(request.query);
+  if(!query.success)return reply.code(400).send({error:{code:"INVALID_QUERY",message:"Sanction filter invalid."}});
+  const {data,error}=await db.from("user_sanctions").select("id,user_id,sanction_type,reason,starts_at,expires_at,active,issued_by").order("starts_at",{ascending:false}).limit(query.data.limit??50);
+  if(error)return reply.code(503).send({error:{code:"SANCTION_READ_FAILED",message:"Sanctions unavailable."}});
+  return reply.send({data});
+ });
  app.post("/v1/admin/moderation/sanctions",async(request,reply)=>{
   const body=sanctionSchema.safeParse(request.body);if(!body.success)return reply.code(400).send({error:{code:"INVALID_SANCTION",message:"Sanction details are invalid."}});
   const {user}=await authenticatedSupabase(request);const db=adminDb();
