@@ -14,6 +14,13 @@ function rpcError(reply: any, error: { code?: string; message?: string }) {
   if (code === "23505") return reply.code(409).send({ error: { code: "REQUEST_CONFLICT", message: "Request is no longer pending or a friendship already exists." } });
   if (code === "22023") return reply.code(400).send({ error: { code: "INVALID_REQUEST", message: "Request action or target is invalid." } });
   return reply.code(400).send({ error: { code: "SOCIAL_ACTION_FAILED", message: "Social action could not be completed." } });
+  app.post("/v1/presence/heartbeat", async (request, reply) => {
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("presence_heartbeat");
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
+  });
+
   app.patch("/v1/presence/settings", async (request, reply) => {
     const body = z.object({
       visibility: z.enum(["everyone", "friends", "nobody"]),
