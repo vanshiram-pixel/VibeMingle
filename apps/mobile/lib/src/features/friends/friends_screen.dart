@@ -6,6 +6,7 @@ import '../../config/app_config.dart';
 import '../settings/presence_settings_screen.dart';
 import 'friend_requests_screen.dart';
 import 'discover_users_screen.dart';
+import '../messaging/messaging_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -83,6 +84,15 @@ class _FriendsScreenState extends State<FriendsScreen> {
             final id = friend['friend_id']?.toString() ?? '';
             final name = friend['display_name']?.toString() ?? 'VibeMingle User';
             return ListTile(
+              onTap: () async {
+                try {
+                  final conversation = await Supabase.instance.client.rpc('conversation_open', params: {'p_friend': id});
+                  if (!context.mounted) return;
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => ConversationScreen(conversationId: conversation.toString())));
+                } catch (_) {
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chat खोलने के लिए mutual friend होना जरूरी है।')));
+                }
+              },
               leading: CircleAvatar(backgroundImage: (friend['avatar_path']?.toString().startsWith('http') ?? false) ? NetworkImage(friend['avatar_path'].toString()) : null, child: friend['avatar_path']?.toString().startsWith('http') == true ? null : const Icon(Icons.person)),
               title: Text(name),
               subtitle: Text(friend['is_online'] == true ? 'Online' : 'Offline', style: TextStyle(color: friend['is_online'] == true ? Colors.greenAccent : null)),
