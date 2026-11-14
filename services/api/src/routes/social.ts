@@ -16,6 +16,16 @@ function rpcError(reply: any, error: { code?: string; message?: string }) {
 }
 
 export async function registerSocialRoutes(app: FastifyInstance): Promise<void> {
+
+  app.get("/v1/users/discover", async (request, reply) => {
+    const query = z.object({ q: z.string().max(64).optional(), limit: z.coerce.number().int().min(1).max(30).optional() }).safeParse(request.query);
+    if (!query.success) return reply.code(400).send({ error: { code: "INVALID_QUERY", message: "Search query is invalid." } });
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("user_discover", { p_query: query.data.q ?? "", p_limit: query.data.limit ?? 20 });
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
+  });
+
   app.post("/v1/friends/requests", async (request, reply) => {
     const parsed = requestSchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ error: { code: "INVALID_TARGET", message: "Target user id is invalid." } });
