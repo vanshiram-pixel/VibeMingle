@@ -40,7 +40,7 @@ export async function registerMatchingRoutes(app:FastifyInstance):Promise<void>{
   const {data,error}=await adminDb().rpc("matching_queue_status",{p_user:user.id});
   if(error){request.log.error({err:error},"matching status RPC failed");return reply.code(503).send({error:{code:"MATCHING_STATUS_UNAVAILABLE",message:"Matching status unavailable."}});}
   const result=Array.isArray(data)?data[0]:data;
-  return reply.send(result??{status:"idle"});
+  return reply.send(result?{status:result.status,sessionId:result.session_id,partnerId:result.partner_id}:{status:"idle"});
  });
  app.delete("/v1/matching/queue",async(request,reply)=>{
   const {user}=await authenticatedSupabase(request);
