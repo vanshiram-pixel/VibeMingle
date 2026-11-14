@@ -32,8 +32,8 @@ suite("local Supabase authenticated API ownership",()=>{
   await app.register(registerSocialRoutes); await app.register(registerCallRoutes);
   const noAuthRead=await app.inject({method:"GET",url:"/v1/me"});
   assert.equal(noAuthRead.statusCode,401,"/v1/me must reject missing bearer tokens");
-  const noAuthWrite=await app.inject({method:"PATCH",url:"/v1/me/profile",payload:{display_name:"Unauthenticated"}});
-  assert.equal(noAuthWrite.statusCode,400,"profile validation precedes authentication for invalid empty payload");
+  const noAuthWrite=await app.inject({method:"PATCH",url:"/v1/me/profile",payload:{display_name:"Unauthenticated Name"}});
+  assert.equal(noAuthWrite.statusCode,401,"/v1/me/profile must reject missing bearer tokens");
   const suffix=`${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const emails=[`api-a-${suffix}@example.test`,`api-b-${suffix}@example.test`];
   const password="LocalOnly-Integration-Password-42!";
