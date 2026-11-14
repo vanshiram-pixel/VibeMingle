@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 20
       - name: Install workspace dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Initialize local Supabase config if absent
         run: |
           if [ ! -f supabase/config.toml ]; then
