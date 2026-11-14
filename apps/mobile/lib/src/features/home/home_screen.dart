@@ -7,6 +7,7 @@ import '../friends/friends_screen.dart';
 import '../matching/matching_screen.dart';
 import '../profile/edit_profile_screen.dart';
 import '../messaging/messaging_screen.dart';
+import '../settings/ai_consent_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
