@@ -83,7 +83,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             final id = friend['friend_id']?.toString() ?? '';
             final name = friend['display_name']?.toString() ?? 'VibeMingle User';
             return ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person)),
+              leading: CircleAvatar(backgroundImage: (friend['avatar_path']?.toString().startsWith('http') ?? false) ? NetworkImage(friend['avatar_path'].toString()) : null, child: friend['avatar_path']?.toString().startsWith('http') == true ? null : const Icon(Icons.person)),
               title: Text(name),
               subtitle: Text(friend['is_online'] == true ? 'Online' : 'Offline', style: TextStyle(color: friend['is_online'] == true ? Colors.greenAccent : null)),
               trailing: PopupMenuButton<String>(
