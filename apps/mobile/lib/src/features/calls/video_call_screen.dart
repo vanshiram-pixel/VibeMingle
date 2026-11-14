@@ -8,7 +8,8 @@ class VideoCallScreen extends StatefulWidget {
 }
 class _VideoCallScreenState extends State<VideoCallScreen>{
  bool micOn=true,cameraOn=true,frontCamera=true; int seconds=0; Timer? timer;
- @override void initState(){super.initState();startPreviewTimer();}\n @override void dispose(){timer?.cancel();super.dispose();}
+ @override void initState(){super.initState();startPreviewTimer();}
+ @override void dispose(){timer?.cancel();super.dispose();}
  String get clock=>'${(seconds~/60).toString().padLeft(2,'0')}:${(seconds%60).toString().padLeft(2,'0')}';
  void startPreviewTimer(){timer?.cancel();timer=Timer.periodic(const Duration(seconds:1),(_){if(mounted)setState(()=>seconds++);});}
  @override Widget build(BuildContext context)=>Scaffold(
