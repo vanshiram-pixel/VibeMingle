@@ -27,3 +27,12 @@ Local replay at commit `218108c6` failed on migration 0014 with the delimiter de
 - V3 CI: PASS [43601066853](https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43601066853).
 
 RLS coverage is targeted at profile/consent/block/report read isolation, profile insert forgery, and report insert restriction. This is not a full security audit, IDOR/API test, or production verification. Hosted Supabase remains untouched.
+
+
+## API policy/unit test follow-up (Nov 14)
+
+- Added bearer-token boundary tests (missing/wrong scheme/empty/opaque token/trim behavior).
+- Added matching eligibility tests covering profile, terms/privacy, age assurance + verified age, sanctions, rate limits, and symmetric block edges.
+- API test suite: 20 tests PASS; V3 CI [43603030071](https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43603030071).
+- A temporary Fastify protected-route harness surfaced a 500-vs-401 mapping discrepancy; explicit AuthenticationError mapping was added in server error handling. The harness was removed because it didn't reliably reproduce the production server setup. Treat this as a fix requiring a future end-to-end API server test—not as independently integration-verified.
+- No authenticated Supabase API/IDOR integration has been run yet. Current evidence is local DB RLS + API unit/static contracts only.
