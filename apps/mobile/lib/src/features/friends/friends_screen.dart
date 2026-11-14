@@ -83,7 +83,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             return ListTile(
               leading: const CircleAvatar(child: Icon(Icons.person)),
               title: Text(name),
-              subtitle: const Text('Friend'),
+              subtitle: Text(friend['is_online'] == true ? 'Online' : 'Offline', style: TextStyle(color: friend['is_online'] == true ? Colors.greenAccent : null)),
               trailing: PopupMenuButton<String>(
                 onSelected: (value) async {
                   if (value == 'unfriend') await _removeFriend(id);
