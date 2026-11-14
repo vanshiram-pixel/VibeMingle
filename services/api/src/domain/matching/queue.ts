@@ -14,7 +14,7 @@ export class LocalMatchQueue {
   const ticket:QueueTicket={userId,preferences:sanitizePreferences(prefs),queuedAt:Date.now(),requestId:randomUUID()};
   const idx=this.queue.findIndex(other=>compatible(ticket,other));
   if(idx>=0){
-   const peer=this.queue.splice(idx,1)[0];this.active.add(userId);this.active.add(peer.userId);
+   const peer=this.queue.splice(idx,1)[0];if(!peer)return {status:"queued",position:this.queue.length+1,estimatedWaitSeconds:Math.min(45,(this.queue.length+1)*3)};this.active.add(userId);this.active.add(peer.userId);
    return {status:"matched",match:{sessionId:randomUUID(),firstUserId:peer.userId,secondUserId:userId,matchedAt:Date.now()}};
   }
   this.queue.push(ticket);return {status:"queued",position:this.queue.length,estimatedWaitSeconds:Math.min(45,this.queue.length*3)};
