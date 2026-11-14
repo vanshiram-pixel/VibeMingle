@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { authenticatedSupabase } from "../plugins/supabase-user.js";
 import { env } from "../config/env.js";
-const schema=z.object({granted:z.boolean(),policyVersion:z.string().min(1).max(80}).strict();
+const schema=z.object({granted:z.boolean(),policyVersion:z.string().min(1).max(80)).strict();
 export async function registerAiConsentRoutes(app:FastifyInstance){
  app.get("/v1/ai/consent",async(request,reply)=>{
   const {user,client}=await authenticatedSupabase(request);
