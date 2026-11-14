@@ -14,7 +14,7 @@ async function requireModerator(db:any,userId:string):Promise<boolean>{
  const {data,error}=await db.from("admin_roles").select("role").eq("user_id",userId).eq("enabled",true).maybeSingle();
  return !error&&!!data&&["moderator","admin","superadmin"].includes(data.role);
 }
-function adminDb(){
+async function enforceCallSanction(db:any,userId:string,reply:any):Promise<boolean>{\n const {data,error}=await db.from("user_sanctions").select("sanction_type,expires_at").eq("user_id",userId).eq("active",true).in("sanction_type",["temporary_suspension","permanent_ban"]);\n if(error){reply.code(503).send({error:{code:"SANCTION_CHECK_UNAVAILABLE",message:"Account eligibility could not be verified."}});return false;}\n const now=Date.now();const blocked=(data??[]).some((s:any)=>s.sanction_type==="permanent_ban"||!s.expires_at||new Date(s.expires_at).getTime()>now);\n if(blocked)reply.code(403).send({error:{code:"ACCOUNT_SUSPENDED",message:"This account is restricted from calls."}});return !blocked;\n}\nfunction adminDb(){
  if(!env.supabaseUrl||!env.supabaseServiceRoleKey) throw new Error("Server database credentials are not configured");
  return createClient(env.supabaseUrl,env.supabaseServiceRoleKey,{auth:{persistSession:false,autoRefreshToken:false}});
 }
