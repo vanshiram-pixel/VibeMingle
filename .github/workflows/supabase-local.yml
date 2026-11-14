@@ -36,6 +36,10 @@ jobs:
         run: |
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL=//p' | tr -d '"')"
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/0018_migration_smoke.sql
+      - name: Run authenticated RLS integration assertions
+        run: |
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL=//p' | tr -d '"')"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/0019_rls_identity_isolation.sql
       - name: Stop local Supabase
         if: always()
         run: supabase stop
