@@ -50,7 +50,8 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   if(!report)return reply.code(404).send({error:{code:"REPORT_NOT_FOUND",message:"Report not found."}});
   const {error}=await db.from("user_reports").update({status:body.data.status}).eq("id",params.data.reportId);
   if(error)return reply.code(503).send({error:{code:"MODERATION_UPDATE_FAILED",message:"Report status could not be updated."}});
-  await db.from("moderation_audit_log").insert({actor_id:user.id,action:"report_"+body.data.status,target_user_id:report.reported_user_id,report_id:params.data.reportId,details:{}});
+  const {error:auditError}=await db.from("moderation_audit_log").insert({actor_id:user.id,action:"report_"+body.data.status,target_user_id:report.reported_user_id,report_id:params.data.reportId,details:{}});
+  if(auditError)return reply.code(503).send({error:{code:"AUDIT_WRITE_FAILED",message:"Report updated but audit write failed; investigate immediately."}});
   return reply.send({updated:true,status:body.data.status});
  });
  app.get("/v1/admin/moderation/audit",async(request,reply)=>{
@@ -92,7 +93,8 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   const expiresAt=body.data.type==="temporary_suspension"&&body.data.durationHours?new Date(Date.now()+body.data.durationHours*3600000).toISOString():null;
   const {data,error}=await db.from("user_sanctions").insert({user_id:body.data.userId,sanction_type:body.data.type,reason:body.data.reason,expires_at:expiresAt,issued_by:user.id}).select("id,user_id,sanction_type,reason,starts_at,expires_at,active").single();
   if(error)return reply.code(503).send({error:{code:"SANCTION_FAILED",message:"Sanction could not be issued."}});
-  await db.from("moderation_audit_log").insert({actor_id:user.id,action:"sanction_"+body.data.type,target_user_id:body.data.userId,sanction_id:data.id,details:{durationHours:body.data.durationHours??null}});
+  const {error:auditError}=await db.from("moderation_audit_log").insert({actor_id:user.id,action:"sanction_"+body.data.type,target_user_id:body.data.userId,sanction_id:data.id,details:{durationHours:body.data.durationHours??null}});
+  if(auditError)return reply.code(503).send({error:{code:"AUDIT_WRITE_FAILED",message:"Sanction issued but audit write failed; investigate immediately."}});
   return reply.code(201).send({data});
  });
  app.post("/v1/calls/token",async(request,reply)=>{
