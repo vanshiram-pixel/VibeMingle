@@ -111,7 +111,7 @@ test("AI global daily budget is atomic and checked before provider spend",()=>{
  const global=ai.indexOf("consume_ai_translation_global_limit");
  const providerCall=ai.indexOf("requestTranslation(");
  assert.ok(quota>0 && global>quota && providerCall>global);
- const budget=readFile(new URL("../../../supabase/migrations/0023_ai_translation_global_daily_budget.sql",import.meta.url),"utf8");
+ const budget=await readFile(new URL("../../../supabase/migrations/0023_ai_translation_global_daily_budget.sql",import.meta.url),"utf8");
  assert.match(budget,/primary key/i);assert.match(budget,/requests < p_daily_limit/);
  assert.match(budget,/timezone/i);assert.match(budget,/utc/i);
  assert.match(budget,/grant execute on function public\\.consume_ai_translation_global_limit\\(integer\\) to service_role/i);
