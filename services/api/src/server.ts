@@ -7,6 +7,7 @@ import { registerOnboardingRoutes } from "./routes/onboarding.js";
 import { registerMatchingRoutes } from "./routes/matching.js";
 import { registerSocialRoutes } from "./routes/social.js";
 import { registerCallRoutes } from "./routes/calls.js";
+import { AuthenticationError } from "./plugins/supabase-user.js";
 
 const app = Fastify({
   logger: { level: env.logLevel },
@@ -29,7 +30,7 @@ app.get("/ready", async (_request, reply) => {
 
 app.setErrorHandler((error: import("fastify").FastifyError, request, reply) => {
   request.log.error({ err: error }, "request failed");
-  const statusCode = error.statusCode && error.statusCode >= 400 ? error.statusCode : 500;
+  const statusCode = error instanceof AuthenticationError ? 401 : (error.statusCode && error.statusCode >= 400 ? error.statusCode : 500);
   return reply.code(statusCode).send({
     error: { code: statusCode >= 500 ? "INTERNAL_ERROR" : "REQUEST_ERROR",
       message: statusCode >= 500 ? "An unexpected error occurred." : error.message,
