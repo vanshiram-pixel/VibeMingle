@@ -40,6 +40,6 @@ app.setErrorHandler((error, request, reply) => {
 try {
   await app.listen({ host: env.host, port: env.port });
 } catch (error) {
-  app.log.error(error);
+  app.log.error(error instanceof Error ? error : new Error(String(error)));
   process.exitCode = 1;
 }
