@@ -87,4 +87,6 @@ This is a source/repository audit, not a live production or legal certification.
 - Still IN_PROGRESS: Flutter consent/translation UX, provider-backed integration/evaluation, distributed rate limiting, global spend budget/kill switch, audio/transcription consent and end-to-end safety evaluation. AI feature flag remains off by default.
 
 - Mobile AI translation screen added: consent fetch/grant/withdraw (policy versioned), bounded text input, target-language selection, translation result/copy, and explicit messages for server-disabled/quota/rate failures. Home screen links to the screen. API response/request contract aligned (nested consent data + policyVersion).
-- Latest Flutter/API UI CI after this addition is running; do not call this UI verified until V3 CI is green.
+- Flutter consent/translation UI CI PASS commit cfe07610: https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43632488241 (Flutter analyze + API/Admin/Web typecheck/build).
+- Additional API guardrail assertions committed at 333e55ed; Repository CI PASS: https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43632560987; V3 CI PASS: https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43632560959; Supabase Local DB Smoke PASS: https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43632560961.
+- These are static contract checks and local migration smoke—not provider-backed live integration or mobile-device E2E. Phase 10 remains IN_PROGRESS.
