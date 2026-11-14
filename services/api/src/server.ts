@@ -7,7 +7,9 @@ import { registerOnboardingRoutes } from "./routes/onboarding.js";
 import { registerMatchingRoutes } from "./routes/matching.js";
 import { registerSocialRoutes } from "./routes/social.js";
 import { registerCallRoutes } from "./routes/calls.js";
-import { registerMessagingRoutes } from "./routes/messaging.js";\nimport { registerAiRoutes } from "./routes/ai.js";\nimport { registerAiConsentRoutes } from "./routes/ai-consent.js";
+import { registerMessagingRoutes } from "./routes/messaging.js";
+import { registerAiRoutes } from "./routes/ai.js";
+import { registerAiConsentRoutes } from "./routes/ai-consent.js";
 import { AuthenticationError } from "./plugins/supabase-user.js";
 
 const app = Fastify({
@@ -22,7 +24,9 @@ await app.register(registerOnboardingRoutes);
 await app.register(registerMatchingRoutes);
 await app.register(registerSocialRoutes);
 await app.register(registerCallRoutes);
-await app.register(registerMessagingRoutes);\nawait app.register(registerAiRoutes);\nawait app.register(registerAiConsentRoutes);
+await app.register(registerMessagingRoutes);
+await app.register(registerAiRoutes);
+await app.register(registerAiConsentRoutes);
 
 app.get("/health", async () => createHealthResponse(env.appVersion));
 app.get("/ready", async (_request, reply) => {
