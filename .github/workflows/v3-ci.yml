@@ -20,6 +20,32 @@ jobs:
       - run: npm test --workspace services/api
       - run: npm run build --workspace services/api
 
+  web:
+    name: Web typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npm run typecheck --workspace apps/web
+      - run: npm run build --workspace apps/web
+
+  admin:
+    name: Admin typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npm run typecheck --workspace apps/admin
+      - run: npm run build --workspace apps/admin
+
   mobile:
     name: Flutter analyze
     runs-on: ubuntu-latest
