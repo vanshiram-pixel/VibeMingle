@@ -77,7 +77,18 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     try { await p.setCameraEnabled(!_camera); if (mounted) setState(() => _camera = !_camera); }
     catch (e) { _show(e.toString()); }
   }
-  Future<void> _end() async {
+
+  Future<void> _report() async {
+    const choices = <String,String>{'harassment':'Harassment','sexual_content':'Sexual content','minor_safety':'Minor safety','spam':'Spam','hate':'Hate or abuse','violence':'Violence','impersonation':'Impersonation','scam':'Scam','other':'Other'};
+    final category = await showDialog<String>(context:context,builder:(ctx)=>AlertDialog(
+      title: const Text('Report this person'),
+      content: Column(mainAxisSize:MainAxisSize.min,children:choices.entries.map((e)=>ListTile(title:Text(e.value),onTap:()=>Navigator.pop(ctx,e.key))).toList()),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Cancel'))]));
+    if(category==null||!mounted)return;
+    try { await _service.report(widget.sessionId,category); if(mounted)_show('Report submitted. Thank you.'); }
+    catch(e){if(mounted)_show(e.toString());}
+  }
+\n  Future<void> _end() async {
     if (_leaving) return;
     setState(() => _leaving = true);
     try { await _room?.disconnect(); await _service.leave(widget.sessionId); }
@@ -95,7 +106,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     final localTrack = _localTrack();
     return Scaffold(
       backgroundColor: const Color(0xFF090912),
-      appBar: AppBar(title: const Text('VibeMingle call'), backgroundColor: Colors.transparent),
+      appBar: AppBar(title: const Text('VibeMingle call'), backgroundColor: Colors.transparent, actions:[IconButton(tooltip:'Report',onPressed:_leaving?null:_report,icon:const Icon(Icons.flag_outlined))]),
       body: SafeArea(child: Column(children: [
         Expanded(child: _connecting
           ? const Center(child: CircularProgressIndicator())
