@@ -52,7 +52,7 @@ class _AiConsentScreenState extends State<AiConsentScreen> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: const Text('AI translation consent'),
-          content: const Text('आपका चुना हुआ text अनुवाद के लिए बाहरी AI provider को भेजा जाएगा। Message text VibeMingle में सेव नहीं होता, लेकिन provider processing के दौरान इसे प्राप्त करेगा। केवल तभी अनुमति दें जब आप सहमत हों।'),
+          content: const Text('आपका चुना हुआ text अनुवाद के लिए बाहरी AI provider को भेजा जाएगा। Message text VibeMingle में सेव नहीं होता, लेकिन provider processing के दौरान इसे प्राप्त करेगा और उसकी अपनी privacy/retention policy लागू हो सकती है। Password, OTP, बैंक/पहचान संबंधी या अन्य संवेदनशील text न भेजें। केवल तभी अनुमति दें जब आप सहमत हों।'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
             FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('I agree')),
@@ -109,7 +109,7 @@ class _AiConsentScreenState extends State<AiConsentScreen> {
       const SizedBox(height: 12),
       const Text('AI Translation', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
       const SizedBox(height: 10),
-      const Text('अनुवाद के लिए भेजा गया टेक्स्ट AI provider तक जाएगा। अनुमति कभी भी वापस ली जा सकती है।'),
+      const Text('अनुवाद के लिए चुना गया टेक्स्ट बाहरी AI provider तक जाएगा। Provider की अपनी privacy/retention policy लागू हो सकती है। Password, OTP या संवेदनशील जानकारी न भेजें। अनुमति कभी भी वापस ली जा सकती है।'),
       const SizedBox(height: 18),
       if (_loading) const Center(child: CircularProgressIndicator()) else SwitchListTile(
         contentPadding: EdgeInsets.zero,
