@@ -1,6 +1,5 @@
 -- VibeMingle 0010: correct discovery projection against foundation schema.
--- The initial foundation has no user_sanctions table yet; omit that predicate
--- until the dedicated sanctions migration lands. Private profiles are not discoverable.
+-- Private profiles are not discoverable; sanctions filtering is enforced in later API guards.
 drop function if exists public.user_discover(text,integer);
 create function public.user_discover(p_query text default '',p_limit integer default 20)
 returns table(user_id uuid,display_name text,avatar_path text)
