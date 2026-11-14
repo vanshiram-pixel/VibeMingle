@@ -68,3 +68,11 @@ This is a source/repository audit, not a live production or legal certification.
 - Verification is for this messaging slice only—not full product launch readiness.
 
 **Follow-up UX/product hardening:** friend picker (currently UUID entry in inbox), unread counts/notifications, message edit UI, pagination/edge-case review and moderation integration.
+
+
+## Phase 10 — AI Intelligence (implementation in progress; not verified)
+- Added opt-in AI translation API `POST /v1/ai/translate`; provider credentials remain server-side, feature flag defaults off, text/language bounds, per-process request throttling and timeout.
+- Translation requires the latest `ai_translation` consent record; provider errors are sanitized. Source/translated content is not persisted; metering records character counts only.
+- Added consent status `GET /v1/ai/consent` and consent grant/withdraw history `PUT /v1/ai/consent` (service-role mediated write).
+- Migration 0020 creates a service-role-only AI usage ledger with no message/text columns.
+- Added API static privacy/consent contract tests. CI runs are pending; provider-backed integration, distributed rate limiting, spend caps, consent UX, audio/transcription consent and safety evaluation remain gaps. Feature stays disabled unless configured.
