@@ -1,0 +1,41 @@
+name: Supabase Local DB Smoke
+
+on:
+  push:
+    branches: [spec/v3-integrated-master-draft]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - "supabase/config.toml"
+      - ".github/workflows/supabase-local.yml"
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - "supabase/config.toml"
+      - ".github/workflows/supabase-local.yml"
+
+jobs:
+  local-db-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.54.11
+      - name: Initialize local Supabase config if absent
+        run: |
+          if [ ! -f supabase/config.toml ]; then
+            supabase init
+          fi
+      - name: Start local Supabase
+        run: supabase start
+      - name: Replay migrations on disposable database
+        run: supabase db reset
+      - name: Run SQL smoke assertions
+        run: |
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL=//p' | tr -d '"')"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/0018_migration_smoke.sql
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop
