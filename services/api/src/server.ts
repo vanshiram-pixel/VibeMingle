@@ -27,7 +27,7 @@ app.get("/ready", async (_request, reply) => {
   return reply.code(200).send({ ready: true, checks: { scaffold: "ok" } });
 });
 
-app.setErrorHandler((error, request, reply) => {
+app.setErrorHandler((error: import("fastify").FastifyError, request, reply) => {
   request.log.error({ err: error }, "request failed");
   const statusCode = error.statusCode && error.statusCode >= 400 ? error.statusCode : 500;
   return reply.code(statusCode).send({
