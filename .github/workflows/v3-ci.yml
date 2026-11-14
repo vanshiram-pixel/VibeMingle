@@ -28,7 +28,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
       - run: npm install
       - run: npm run typecheck --workspace apps/web
       - run: npm run build --workspace apps/web
@@ -41,7 +40,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
       - run: npm install
       - run: npm run typecheck --workspace apps/admin
       - run: npm run build --workspace apps/admin
