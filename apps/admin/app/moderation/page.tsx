@@ -1,18 +1,14 @@
-export default function ModerationPage() {
-  const modules = [
-    ["Report queue", "GET /v1/admin/moderation/reports", "Submitted reports with category, context, reporter and reported-user IDs."],
-    ["Review workflow", "PATCH /v1/admin/moderation/reports/:reportId", "Triage, investigate, action or dismiss; every status change is audited."],
-    ["User sanctions", "POST /v1/admin/moderation/sanctions", "Warnings and timed suspensions; permanent ban reserved for superadmins."],
-    ["Audit trail", "moderation_audit_log", "Actor, target, report/sanction reference and action metadata."]
-  ];
-  return <main className="admin">
-    <header><strong>VibeMingle</strong><span>TRUST & SAFETY · MODERATION</span></header>
-    <section>
-      <p className="tag">RESTRICTED · RBAC REQUIRED</p><h1>Moderation Console</h1>
-      <p>Backend moderation endpoints are protected by enabled moderator/admin/superadmin records. This page is a UI scaffold; it does not display live user reports until the admin identity, MFA and API session integration are configured.</p>
-      <div className="notice">Setup gate: review and apply migration 0015, then provision the first superadmin out-of-band. Do not seed privileged roles from client input.</div>
-      <div className="modules">{modules.map(([name,endpoint,detail])=><article key={name}><h2>{name}</h2><code>{endpoint}</code><p>{detail}</p></article>)}</div>
-      <p className="footnote">No reports or personal data are fetched on this scaffold. All privileged actions must be server-authorized and audit logged.</p>
-    </section>
-  </main>;
+"use client";
+import { useEffect,useState } from "react";
+type Report={id:string;reporter_id:string;reported_user_id:string;category:string;description:string;context_type:string;context_id:string|null;status:string;created_at:string};
+const statuses=["submitted","triaged","investigating","actioned","dismissed"];
+export default function ModerationPage(){
+ const [reports,setReports]=useState<Report[]>([]),[status,setStatus]=useState("submitted"),[busy,setBusy]=useState(false),[error,setError]=useState(""),[note,setNote]=useState("");
+ async function load(){setBusy(true);setError("");try{const r=await fetch("/api/admin/moderation/reports?status="+status,{cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.error?.message||"Queue load failed");setReports(j.data??[])}catch(e){setError(e instanceof Error?e.message:"Request failed")}finally{setBusy(false)}}
+ useEffect(()=>{void load()},[status]);
+ async function act(id:string,next:string){setNote("");try{const r=await fetch("/api/admin/moderation/reports/"+id,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({status:next})});const j=await r.json();if(!r.ok)throw new Error(j.error?.message||"Update failed");setNote("Report status updated.");await load()}catch(e){setError(e instanceof Error?e.message:"Update failed")}}
+ return <main className="admin"><header><strong>VibeMingle</strong><span>TRUST & SAFETY · MODERATION</span></header><section className="wide"><p className="tag">RESTRICTED · SERVER AUTH + MFA</p><h1>Report Queue</h1><p>Live report queue; every action is enforced by API RBAC and written to the moderation audit log.</p>
+ <div className="toolbar"><label>Status <select value={status} onChange={e=>setStatus(e.target.value)}>{statuses.map(s=><option key={s}>{s}</option>)}</select></label><button onClick={()=>void load()} disabled={busy}>Refresh</button></div>
+ {error&&<div className="notice error">{error}</div>}{note&&<div className="notice">{note}</div>}{busy&&<p>Loading reports…</p>}
+ <div className="reports">{reports.map(r=><article key={r.id}><div className="reporttop"><strong>{r.category.replaceAll("_"," ")}</strong><small>{new Date(r.created_at).toLocaleString()}</small></div><p>{r.description||"No description provided."}</p><code>{r.id}</code><p className="meta">Reporter: {r.reporter_id}<br/>Reported user: {r.reported_user_id}<br/>Context: {r.context_type} · {r.context_id||"—"}</p><div className="actions">{statuses.filter(s=>s!==r.status).map(s=><button key={s} onClick={()=>void act(r.id,s)}>{s}</button>)}</div></article>)}</div>{!busy&&!reports.length&&<div className="notice">No reports in this status.</div>}</section></main>
 }
