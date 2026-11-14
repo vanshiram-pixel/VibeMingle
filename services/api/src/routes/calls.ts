@@ -31,6 +31,7 @@ function adminDb(){
  return createClient(env.supabaseUrl,env.supabaseServiceRoleKey,{auth:{persistSession:false,autoRefreshToken:false}});
 }
 export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
+ app.get("/v1/admin/moderation/me",async(request,reply)=>{const auth=await requireAdminAal2(request,reply);if(!auth)return;const db=adminDb();const {data,error}=await db.from("admin_roles").select("role").eq("user_id",auth.user.id).eq("enabled",true).maybeSingle();if(error)return reply.code(503).send({error:{code:"ADMIN_ROLE_LOOKUP_FAILED",message:"Role lookup unavailable."}});if(!data)return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});return {data:{role:data.role}};});
  app.get("/v1/admin/moderation/reports",async(request,reply)=>{
   const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
