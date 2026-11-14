@@ -55,3 +55,14 @@ This is a source/repository audit, not a live production or legal certification.
 ## Boundaries
 - No Supabase migration application, production deployment, billing enablement, or real user data changes without explicit user permission.
 - CI green means automated repository checks passed; it does not mean production readiness.
+
+
+## Phase 9 — Social Graph & Messaging (implementation underway)
+
+**Messaging slice delivered to branch (pending CI/local DB verification):**
+- Migration 0018 private conversation/member/message schema; RLS participant reads and no direct client write policies.
+- Migration 0019 transactional RPCs: friend-only conversation open, authenticated message send/edit/delete, conversation read marker. Actor identity comes from auth.uid(); block checks gate conversation creation/send.
+- API routes: conversation create/list, cursor-based message listing, send/edit/delete, mark-read; registered in API server.
+- Flutter: inbox, friend-list tap to open chat, realtime message refresh, send and sender-only soft-delete UI.
+- Tests: SQL smoke assertions for messaging schema/write-policy; RLS fixture for participant reads and direct-write rejection; local authenticated API integration exercises two-user friend messaging, sender edit/delete ownership, and unauthenticated route rejection.
+- Latest implementation commits include 0018 schema, 0019 RPCs, API routes and Flutter screens. Do not label Phase 9 VERIFIED until Supabase Local DB Smoke and V3 CI pass; follow-up needs unread counts/notifications, UX friend picker, edit UI and edge-case review.
