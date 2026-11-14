@@ -36,3 +36,7 @@ The repository currently contains UI scaffolds and SDK dependency only. Generate
 - Friends app bar opens Presence Privacy settings (`PATCH /v1/presence/settings`).
 - Configure `API_BASE_URL` and apply migrations `0006` and `0007` before these API actions can work.
 - Presence controls save privacy preferences; realtime online/offline presence and privacy enforcement at the broadcast layer remain pending.
+
+- Home sends `POST /v1/presence/heartbeat` at startup, every 45 seconds, and on app resume. Heartbeats expire from online projection after 90 seconds.
+- `GET /v1/friends` now includes privacy-filtered `is_online`; no raw last-seen timestamp is exposed.
+- Realtime push/presence broadcasting is not yet enabled; current online indicator is heartbeat-based polling/refresh.
