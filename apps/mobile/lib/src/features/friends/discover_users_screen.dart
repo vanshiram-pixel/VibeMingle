@@ -47,7 +47,7 @@ class _DiscoverUsersScreenState extends State<DiscoverUsersScreen>{
       Expanded(child:_loading?const Center(child:CircularProgressIndicator()):ListView.builder(
         itemCount:_users.length,itemBuilder:(context,index){
           final u=_users[index] as Map<String,dynamic>;
-          return ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(u['display_name']?.toString()??'VibeMingle User'),trailing:IconButton(icon:const Icon(Icons.person_add_alt_1),onPressed:()=>add(u['user_id'].toString())));
+          final avatar=u['avatar_path']?.toString(); return ListTile(leading:CircleAvatar(backgroundImage:avatar!=null&&avatar.startsWith('http')?NetworkImage(avatar):null,child:avatar!=null&&avatar.startsWith('http')?null:const Icon(Icons.person)),title:Text(u['display_name']?.toString()??'VibeMingle User'),trailing:IconButton(icon:const Icon(Icons.person_add_alt_1),onPressed:()=>add(u['user_id'].toString())));
         },
       )),
     ]),
