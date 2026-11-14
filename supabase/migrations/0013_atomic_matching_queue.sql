@@ -1,0 +1,68 @@
+-- VibeMingle 0013: server-only, atomic matching queue/session admission.
+create table if not exists public.match_queue (
+ user_id uuid primary key references auth.users(id) on delete cascade,
+ preferences jsonb not null default '{}'::jsonb check(jsonb_typeof(preferences)='object'),
+ queued_at timestamptz not null default now()
+);
+create index if not exists match_queue_waiting on public.match_queue(queued_at);
+alter table public.match_queue enable row level security;
+revoke all on public.match_queue from anon,authenticated,public;
+
+create or replace function public.matching_enqueue_or_pair(p_user uuid,p_preferences jsonb default '{}'::jsonb)
+returns table(matched boolean,session_id uuid,partner_id uuid)
+language plpgsql security definer set search_path=''
+as $$
+declare v_candidate uuid; v_session uuid; v_pref jsonb;
+begin
+ if jsonb_typeof(p_preferences)<>'object' then raise exception 'invalid_preferences'; end if;
+ -- Serialize admission for this user; concurrent requests cannot create duplicate queue rows.
+ perform pg_advisory_xact_lock(hashtextextended(p_user::text,0));
+ if not exists(select 1 from public.profiles p where p.id=p_user) then raise exception 'profile_missing'; end if;
+ if not exists(select 1 from public.user_consents c where c.user_id=p_user and c.purpose='terms' and c.granted and c.withdrawn_at is null)
+ or not exists(select 1 from public.user_consents c where c.user_id=p_user and c.purpose='privacy' and c.granted and c.withdrawn_at is null)
+ or not exists(select 1 from public.user_consents c where c.user_id=p_user and c.purpose='age_assurance' and c.granted and c.withdrawn_at is null)
+ then raise exception 'consent_required'; end if;
+
+ -- Pick oldest compatible user; lock candidate so another transaction cannot claim it.
+ select q.user_id,q.preferences into v_candidate,v_pref
+ from public.match_queue q
+ where q.user_id<>p_user
+   and (coalesce(p_preferences->>'region','')='' or coalesce(q.preferences->>'region','')='' or q.preferences->>'region'=p_preferences->>'region')
+   and (coalesce(p_preferences->>'language','')='' or coalesce(q.preferences->>'language','')='' or q.preferences->>'language'=p_preferences->>'language')
+   and not exists(select 1 from public.user_blocks b where
+       (b.blocker_id=p_user and b.blocked_id=q.user_id) or
+       (b.blocker_id=q.user_id and b.blocked_id=p_user))
+   and exists(select 1 from public.profiles p where p.id=q.user_id)
+   and exists(select 1 from public.user_consents c where c.user_id=q.user_id and c.purpose='terms' and c.granted and c.withdrawn_at is null)
+   and exists(select 1 from public.user_consents c where c.user_id=q.user_id and c.purpose='privacy' and c.granted and c.withdrawn_at is null)
+   and exists(select 1 from public.user_consents c where c.user_id=q.user_id and c.purpose='age_assurance' and c.granted and c.withdrawn_at is null)
+ order by q.queued_at
+ for update skip locked limit 1;
+
+ if v_candidate is null then
+   insert into public.match_queue(user_id,preferences,queued_at) values(p_user,p_preferences,now())
+   on conflict(user_id) do update set preferences=excluded.preferences,queued_at=excluded.queued_at;
+   return query select false,null::uuid,null::uuid; return;
+ end if;
+
+ -- Recheck both block directions at insertion time under transaction.
+ if exists(select 1 from public.user_blocks b where
+   (b.blocker_id=p_user and b.blocked_id=v_candidate) or
+   (b.blocker_id=v_candidate and b.blocked_id=p_user)) then
+   return query select false,null::uuid,null::uuid; return;
+ end if;
+ insert into public.match_sessions(participant_a,participant_b,status)
+ values(p_user,v_candidate,'created') returning id into v_session;
+ delete from public.match_queue where user_id in (p_user,v_candidate);
+ return query select true,v_session,v_candidate;
+end;
+$$;
+
+create or replace function public.matching_queue_remove(p_user uuid)
+returns void language sql security definer set search_path=''
+as $$ delete from public.match_queue where user_id=p_user; $$;
+
+revoke all on function public.matching_enqueue_or_pair(uuid,jsonb) from public,anon,authenticated;
+revoke all on function public.matching_queue_remove(uuid) from public,anon,authenticated;
+grant execute on function public.matching_enqueue_or_pair(uuid,jsonb) to service_role;
+grant execute on function public.matching_queue_remove(uuid) to service_role;
