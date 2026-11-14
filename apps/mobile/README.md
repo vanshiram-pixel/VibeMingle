@@ -43,3 +43,6 @@ The repository currently contains UI scaffolds and SDK dependency only. Generate
 
 - Friend Requests screen: send by exact target UUID; list incoming/outgoing; accept, reject, or cancel pending requests. Open from the envelope icon on Friends.
 - Social routes include authenticated friend request CRUD actions, friend list/unfriend, block/unblock, presence heartbeat and privacy settings.
+
+- Discover People: Friends toolbar search icon opens display-name search (`GET /v1/users/discover?q=...`) and sends requests through `POST /v1/friends/requests`.
+- Discovery returns only display name/avatar and excludes self, mutual block edges and active sanctioned users; no email or private identity fields.
