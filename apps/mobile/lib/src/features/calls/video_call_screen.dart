@@ -42,6 +42,16 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     }
   }
 
+  VideoTrack? _localTrack() {
+    final participant = _room?.localParticipant;
+    if (participant == null) return null;
+    for (final publication in participant.videoTrackPublications) {
+      final track = publication.track;
+      if (track is VideoTrack) return track;
+    }
+    return null;
+  }
+
   VideoTrack? _remoteTrack() {
     final room = _room;
     if (room == null) return null;
@@ -79,6 +89,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   @override
   Widget build(BuildContext context) {
     final track = _remoteTrack();
+    final localTrack = _localTrack();
     return Scaffold(
       backgroundColor: const Color(0xFF090912),
       appBar: AppBar(title: const Text('VibeMingle call'), backgroundColor: Colors.transparent),
@@ -87,12 +98,26 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
             ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!, textAlign: TextAlign.center)))
-            : track != null
-              ? ClipRRect(borderRadius: BorderRadius.circular(18), child: VideoTrackRenderer(track))
-              : const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.person, size: 100, color: Colors.deepPurpleAccent),
-                  SizedBox(height: 12), Text('Waiting for partner video…'),
-                ]))),
+            : Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (track != null)
+                    ClipRRect(borderRadius: BorderRadius.circular(18), child: VideoTrackRenderer(track))
+                  else
+                    const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.person, size: 100, color: Colors.deepPurpleAccent),
+                      SizedBox(height: 12), Text('Waiting for partner video…'),
+                    ])),
+                  if (localTrack != null)
+                    Positioned(
+                      right: 16, top: 16, width: 112, height: 160,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: VideoTrackRenderer(localTrack),
+                      ),
+                    ),
+                ],
+              )),
         Padding(padding: const EdgeInsets.all(22), child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
