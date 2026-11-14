@@ -62,7 +62,7 @@ test("AI rate limiter is shared across API instances and atomic in database",()=
  assert.match(ai,/consume_ai_translation_rate_limit/);
  assert.match(ai,/AI_RATE_LIMIT_UNAVAILABLE/);
  assert.doesNotMatch(ai,/new Map/);
- assert.match(rate,/primary key\(user_id\)/i);
+ assert.match(rate,/user_id uuid primary key/i);
  assert.match(rate,/requests < 8/);
  assert.match(rate,/interval/);
  assert.match(rate,/security definer/i);
