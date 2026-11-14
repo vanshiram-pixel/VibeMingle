@@ -76,3 +76,12 @@ This is a source/repository audit, not a live production or legal certification.
 - Added consent status `GET /v1/ai/consent` and consent grant/withdraw history `PUT /v1/ai/consent` (service-role mediated write).
 - Migration 0020 creates a service-role-only AI usage ledger with no message/text columns.
 - Added API static privacy/consent contract tests. CI runs are pending; provider-backed integration, distributed rate limiting, spend caps, consent UX, audio/transcription consent and safety evaluation remain gaps. Feature stays disabled unless configured.
+
+
+**AI translation hardening update (2026-11-15):**
+- Migration 0021 adds atomic per-user UTC-day quota: max 30 requests and 30,000 input characters/day; requests are 1–4,000 chars. Service-role-only RPC; quota exhaustion returns 429.
+- Quota consumption precedes provider invocation; successful responses require usage-ledger insertion (fail-closed). Ledger stores counts only, never text.
+- Repository CI PASS commit fafb584a: https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43629111527
+- V3 CI PASS commit fafb584a: https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43629111544
+- Supabase Local DB Smoke PASS commit fafb584a: https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43629111528
+- Still IN_PROGRESS: Flutter consent/translation UX, provider-backed integration/evaluation, distributed rate limiting, global spend budget/kill switch, audio/transcription consent and end-to-end safety evaluation. AI feature flag remains off by default.
