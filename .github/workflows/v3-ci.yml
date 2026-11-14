@@ -1,0 +1,35 @@
+name: V3 CI
+
+on:
+  push:
+    branches: [spec/v3-integrated-master-draft]
+  pull_request:
+    branches: [spec/v3-integrated-master-draft]
+
+jobs:
+  api:
+    name: API typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npm run typecheck --workspace services/api
+      - run: npm run build --workspace services/api
+
+  mobile:
+    name: Flutter analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: apps/mobile
+      - run: flutter analyze
+        working-directory: apps/mobile
