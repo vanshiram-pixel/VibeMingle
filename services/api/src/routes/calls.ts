@@ -47,6 +47,28 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   await db.from("moderation_audit_log").insert({actor_id:user.id,action:"report_"+body.data.status,target_user_id:report.reported_user_id,report_id:params.data.reportId,details:{}});
   return reply.send({updated:true,status:body.data.status});
  });
+ app.get("/v1/admin/moderation/audit",async(request,reply)=>{
+  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
+  const parsed=z.object({limit:z.coerce.number().int().min(1).max(100).optional()}).safeParse(request.query);
+  if(!parsed.success)return reply.code(400).send({error:{code:"INVALID_QUERY",message:"Audit filters are invalid."}});
+  const {data,error}=await db.from("moderation_audit_log").select("id,actor_id,action,target_user_id,report_id,sanction_id,details,created_at").order("created_at",{ascending:false}).limit(parsed.data.limit??50);
+  if(error)return reply.code(503).send({error:{code:"AUDIT_READ_FAILED",message:"Audit log unavailable."}});
+  return reply.send({data});
+ });
+ app.patch("/v1/admin/moderation/sanctions/:sanctionId/revoke",async(request,reply)=>{
+  const params=z.object({sanctionId:z.string().uuid()}).safeParse(request.params);
+  if(!params.success)return reply.code(400).send({error:{code:"INVALID_SANCTION",message:"Sanction id is invalid."}});
+  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  const {data:role}=await db.from("admin_roles").select("role").eq("user_id",user.id).eq("enabled",true).maybeSingle();
+  if(!role||!["admin","superadmin"].includes(role.role))return reply.code(403).send({error:{code:"SANCTION_REVOKE_FORBIDDEN",message:"Admin access required."}});
+  const {data,error}=await db.from("user_sanctions").update({active:false}).eq("id",params.data.sanctionId).eq("active",true).select("id,user_id,sanction_type").maybeSingle();
+  if(error)return reply.code(503).send({error:{code:"SANCTION_REVOKE_FAILED",message:"Sanction could not be revoked."}});
+  if(!data)return reply.code(404).send({error:{code:"SANCTION_NOT_FOUND",message:"Active sanction not found."}});
+  const {error:auditError}=await db.from("moderation_audit_log").insert({actor_id:user.id,action:"sanction_revoked",target_user_id:data.user_id,sanction_id:data.id,details:{}});
+  if(auditError)return reply.code(503).send({error:{code:"AUDIT_WRITE_FAILED",message:"Sanction revoked but audit write failed; investigate immediately."}});
+  return reply.send({revoked:true,id:data.id});
+ });
  app.post("/v1/admin/moderation/sanctions",async(request,reply)=>{
   const body=sanctionSchema.safeParse(request.body);if(!body.success)return reply.code(400).send({error:{code:"INVALID_SANCTION",message:"Sanction details are invalid."}});
   const {user}=await authenticatedSupabase(request);const db=adminDb();
