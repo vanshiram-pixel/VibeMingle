@@ -18,7 +18,7 @@ const enabled=process.env.SUPABASE_LOCAL_INTEGRATION==="1";
 const url=process.env.SUPABASE_URL??"";
 const anon=process.env.SUPABASE_ANON_KEY??"";
 const service=process.env.SUPABASE_SERVICE_ROLE_KEY??"";
-const localHost=["localhost","127.0.0.1","supabase"].some(host=>{try{return new URL(url).hostname===host}catch{return false}}) || url.startsWith("http://kong:");
+const localHost=["localhost","127.0.0.1","supabase","kong"].some(host=>{try{return new URL(url).hostname===host}catch{return false}});
 const suite=enabled&&localHost&&anon&&service?describe:describe.skip;
 
 suite("local Supabase authenticated API ownership",()=>{
