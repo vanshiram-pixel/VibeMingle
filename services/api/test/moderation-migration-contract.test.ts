@@ -14,7 +14,7 @@ describe("moderation SQL migration security contracts (static; no live DB)",()=>
   assert.match(sql,/grant execute on function public\.consume_api_rate_limit[\s\S]*to service_role/i);
   const route=readFileSync(resolve(process.cwd(),"src/routes/calls.ts"),"utf8");
   assert.match(route,/if\(error\)return null/i);
-  assert.match(route,/rate limit/i);
+  assert.match(route,/consume_api_rate_limit/i);
  });
  it("report status mutation and audit insert share one SQL transaction/function",()=>{
   const sql=migration("0017_transactional_moderation_audit.sql");
