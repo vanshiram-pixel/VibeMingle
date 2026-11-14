@@ -5,6 +5,7 @@ const ai=await readFile(new URL("../src/routes/ai.ts",import.meta.url),"utf8");
 const consent=await readFile(new URL("../src/routes/ai-consent.ts",import.meta.url),"utf8");
 const migration=await readFile(new URL("../../../supabase/migrations/0020_ai_translation_consent.sql",import.meta.url),"utf8");
 const quota=await readFile(new URL("../../../supabase/migrations/0021_ai_translation_daily_quota.sql",import.meta.url),"utf8");
+const rate=await readFile(new URL("../../../supabase/migrations/0022_ai_translation_distributed_rate_limit.sql",import.meta.url),"utf8");
 test("AI translation is opt-in, bounded and backend-keyed",()=>{
  assert.match(ai,/authenticatedSupabase/);assert.match(ai,/ai_translation/);assert.match(ai,/aiTranslationEnabled/);
  assert.match(ai,/max\(4000\)/);assert.match(ai,/AI_RATE_LIMIT/);assert.match(ai,/AbortController/);
@@ -57,10 +58,16 @@ test("AI translation errors do not expose provider response bodies",()=>{
 });
 
 
-test("AI in-process rate limiter prunes expired user windows",()=>{
- assert.match(ai,/rateLimitCleanupCounter%128===0/);
- assert.match(ai,/now-value\.start>=60_000/);
- assert.match(ai,/windows\.delete\(key\)/);
+test("AI rate limiter is shared across API instances and atomic in database",()=>{
+ assert.match(ai,/consume_ai_translation_rate_limit/);
+ assert.match(ai,/AI_RATE_LIMIT_UNAVAILABLE/);
+ assert.doesNotMatch(ai,/new Map/);
+ assert.match(rate,/primary key\(user_id\)/i);
+ assert.match(rate,/requests < 8/);
+ assert.match(rate,/interval/);
+ assert.match(rate,/security definer/i);
+ assert.match(rate,/grant execute on function public\.consume_ai_translation_rate_limit\(uuid\) to service_role/i);
+ assert.match(rate,/enable row level security/i);
 });
 
 test("AI quota uses UTC day buckets and rejects invalid character counts",()=>{
