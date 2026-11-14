@@ -6,6 +6,7 @@ import '../../config/app_config.dart';
 import '../friends/friends_screen.dart';
 import '../matching/matching_screen.dart';
 import '../profile/edit_profile_screen.dart';
+import '../messaging/messaging_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -76,6 +77,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         SizedBox(width: double.infinity, child: OutlinedButton.icon(
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen())),
           icon: const Icon(Icons.people), label: const Text('Friends'),
+        )),
+        const SizedBox(height: 12),
+        SizedBox(width: double.infinity, child: OutlinedButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessagingScreen())),
+          icon: const Icon(Icons.chat), label: const Text('Private messages'),
         )),
       ]),
     )),
