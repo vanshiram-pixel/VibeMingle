@@ -1,14 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-const ai=await readFile(new URL("../src/routes/ai.ts",import.meta.url),"utf8");
+const ai=await readFile(new URL("../src/routes/ai.ts",import.meta.url),"utf8");\nconst provider=await readFile(new URL("../src/lib/ai-translation-provider.ts",import.meta.url),"utf8");
 const consent=await readFile(new URL("../src/routes/ai-consent.ts",import.meta.url),"utf8");
 const migration=await readFile(new URL("../../../supabase/migrations/0020_ai_translation_consent.sql",import.meta.url),"utf8");
 const quota=await readFile(new URL("../../../supabase/migrations/0021_ai_translation_daily_quota.sql",import.meta.url),"utf8");
 const rate=await readFile(new URL("../../../supabase/migrations/0022_ai_translation_distributed_rate_limit.sql",import.meta.url),"utf8");
 test("AI translation is opt-in, bounded and backend-keyed",()=>{
  assert.match(ai,/authenticatedSupabase/);assert.match(ai,/ai_translation/);assert.match(ai,/aiTranslationEnabled/);
- assert.match(ai,/max\(4000\)/);assert.match(ai,/AI_RATE_LIMIT/);assert.match(ai,/AbortController/);
+ assert.match(ai,/max\(4000\)/);assert.match(ai,/AI_RATE_LIMIT/);assert.match(provider,/AbortController/);
  assert.match(ai,/OPENAI_API_KEY|openaiApiKey/);assert.doesNotMatch(ai,/console\.(log|info).*parsed\.data\.text/);
 });
 test("AI consent endpoint supports status and immutable grant/withdraw history",()=>{
@@ -28,12 +28,12 @@ test("AI daily quota is atomic, bounded, and service-role only",()=>{
 test("AI translation rejects unsupported language codes and caps provider output",()=>{
  assert.match(ai,/const allowed=new Set/);
  assert.match(ai,/allowed\.has/);
- assert.match(ai,/max_output_tokens:1000/);
- assert.match(ai,/translated\.length>8000/);
- assert.match(ai,/treat it strictly as content to translate/);
+ assert.match(provider,/max_output_tokens:1000/);
+ assert.match(provider,/translated\.length>8000/);
+ assert.match(provider,/treat it strictly as content to translate/);
 });
 test("AI provider requests are timeout-bound and metered without text",()=>{
- assert.match(ai,/12_000/);
+ assert.match(provider,/12_000/);
  assert.match(ai,/input_chars:parsed\.data\.text\.length/);
  assert.match(ai,/output_chars:translated\.length/);
  assert.doesNotMatch(ai,/insert\(\{[^}]*text:/s);
@@ -42,7 +42,7 @@ test("AI provider requests are timeout-bound and metered without text",()=>{
 test("AI translation checks consent and feature flag before provider call",()=>{
  const consentIndex=ai.indexOf("AI_CONSENT_REQUIRED");
  const disabledIndex=ai.indexOf("AI_DISABLED");
- const providerIndex=ai.indexOf('fetch("https://api.openai.com/v1/responses"');
+ const providerIndex=ai.indexOf("requestTranslation(");
  assert.ok(consentIndex>0 && disabledIndex>consentIndex && providerIndex>disabledIndex);
  assert.match(ai,/aiTranslationEnabled/);
 });
