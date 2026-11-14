@@ -40,6 +40,10 @@ jobs:
         run: |
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL=//p' | tr -d '"')"
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/0019_rls_identity_isolation.sql
+      - name: Run authenticated API ownership integration
+        run: |
+          eval "$(supabase status -o env | sed -E 's/^([A-Z_]+)=/export \\1=/')"
+          SUPABASE_LOCAL_INTEGRATION=1 SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" npm test --workspace services/api
       - name: Stop local Supabase
         if: always()
         run: supabase stop
