@@ -31,7 +31,7 @@ export async function registerMessagingRoutes(app:FastifyInstance){
   const {data:member,error:me}=await client.from("conversation_members").select("conversation_id").eq("conversation_id",p.data.conversationId).eq("user_id",user.id).maybeSingle();
   if(me||!member)return reply.code(403).send({error:{code:"CONVERSATION_FORBIDDEN",message:"Conversation unavailable."}});
   let query=client.from("messages").select("id,conversation_id,sender_id,body,created_at,edited_at,deleted_at").eq("conversation_id",p.data.conversationId).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(q.data.limit??50);
-  if(q.data.before){const {data:cursor}=await client.from("messages").select("created_at").eq("id",q.data.before).eq("conversation_id",p.data.conversationId).maybeSingle();if(!cursor)return reply.code(400).send({error:{code:"INVALID_CURSOR",message:"Message cursor not found."}});query=query.lt("created_at",cursor.created_at);}
+  if(q.data.before){const {data:cursor,error:cursorError}=await client.from("messages").select("id,created_at").eq("id",q.data.before).eq("conversation_id",p.data.conversationId).maybeSingle();if(cursorError)return reply.code(503).send({error:{code:"MESSAGE_CURSOR_UNAVAILABLE",message:"Message pagination is temporarily unavailable."}});if(!cursor)return reply.code(400).send({error:{code:"INVALID_CURSOR",message:"Message cursor not found."}});query=query.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`);}
   const {data,error}=await query;if(error)return reply.code(400).send({error:{code:"MESSAGES_READ_FAILED",message:"Messages unavailable."}});
   return reply.send({data:(data??[]).reverse()});
  });
