@@ -30,6 +30,8 @@ begin
  if (select count(*) from public.user_blocks where blocker_id='20000000-0000-4000-8000-000000000002')<>0 then raise exception 'FAIL A reads B block'; end if;
  if (select count(*) from public.user_reports where reporter_id='10000000-0000-4000-8000-000000000001')<>1 then raise exception 'FAIL A own report'; end if;
  if (select count(*) from public.user_reports where reporter_id='20000000-0000-4000-8000-000000000002')<>0 then raise exception 'FAIL A reads B report'; end if;
+ update public.profiles set display_name='forged cross-user update' where id='20000000-0000-4000-8000-000000000002';
+ if found then raise exception 'FAIL A updated B profile'; end if;
  begin insert into public.profiles(id,display_name) values('20000000-0000-4000-8000-000000000002','forged'); raise exception 'FAIL A inserted B profile'; exception when insufficient_privilege then null; end;
 end $$;
 
@@ -39,8 +41,10 @@ do $$
 begin
  if (select count(*) from public.profiles where id='20000000-0000-4000-8000-000000000002')<>1 then raise exception 'FAIL B own profile'; end if;
  if (select count(*) from public.user_reports where reporter_id='10000000-0000-4000-8000-000000000001')<>0 then raise exception 'FAIL B reads A report'; end if;
+ update public.profiles set display_name='forged cross-user update' where id='10000000-0000-4000-8000-000000000001';
+ if found then raise exception 'FAIL B updated A profile'; end if;
  begin insert into public.user_reports(reporter_id,reported_user_id,category) values('20000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000001','spam'); raise exception 'FAIL client inserted report'; exception when insufficient_privilege then null; end;
 end $$;
 reset role;
 rollback;
-select 'RLS identity isolation assertions: PASS (12 checks)' as result;
+select 'RLS identity isolation assertions: PASS (14 checks)' as result;
