@@ -84,6 +84,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessagingScreen())),
           icon: const Icon(Icons.chat), label: const Text('Private messages'),
         )),
+        const SizedBox(height: 12),
+        SizedBox(width: double.infinity, child: OutlinedButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiConsentScreen())),
+          icon: const Icon(Icons.translate), label: const Text('AI & Translation Privacy'),
+        )),
       ]),
     )),
   );
