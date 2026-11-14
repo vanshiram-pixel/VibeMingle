@@ -24,7 +24,7 @@ const suite=enabled&&localHost&&anon&&service?describe:describe.skip;
 suite("local Supabase authenticated API ownership",()=>{
  it("isolates /v1/me and profile PATCH to each verified Auth identity",async()=>{
   assert.ok(localHost,"integration URL must be local; hosted Supabase is forbidden");
-  const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
+  const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false},realtime:{enabled:false}});
   const app=Fastify({logger:false});
   app.setErrorHandler((error,request,reply)=>reply.code(error instanceof Error&&"statusCode" in error?Number((error as {statusCode:number}).statusCode):500).send({error:{message:"request failed"}}));
   await app.register(registerAuthRoutes); await app.register(registerMeRoutes);
@@ -38,7 +38,7 @@ suite("local Supabase authenticated API ownership",()=>{
    for(const email of emails){
     const created=await admin.auth.admin.createUser({email,password,email_confirm:true});
     assert.ifError(created.error); assert.ok(created.data.user); ids.push(created.data.user.id);
-    const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
+    const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false},realtime:{enabled:false}});
     const signed=await auth.auth.signInWithPassword({email,password});
     assert.ifError(signed.error); assert.ok(signed.data.session?.access_token);
     tokens.push(signed.data.session.access_token);
