@@ -59,6 +59,16 @@ suite("local Supabase authenticated API ownership",()=>{
     assert.ifError(signed.error); assert.ok(signed.data.session?.access_token);
     tokens.push(signed.data.session.access_token);
    }
+   const pair=ids[0]<ids[1]?{user_a:ids[0],user_b:ids[1]}:{user_a:ids[1],user_b:ids[0]};
+   const friendship=await admin.from("friendships").insert(pair); assert.ifError(friendship.error);
+   const userA=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:`Bearer ${tokens[0]}`}},realtime:{enabled:false}});
+   const userB=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:`Bearer ${tokens[1]}`}},realtime:{enabled:false}});
+   const opened=await userA.rpc("conversation_open",{p_friend:ids[1]});assert.ifError(opened.error);assert.ok(opened.data);
+   const sent=await userB.rpc("message_send",{p_conversation:opened.data,p_body:"local integration hello"});assert.ifError(sent.error);assert.equal(sent.data.sender_id,ids[1]);
+   const read=await userA.from("messages").select("id,body,sender_id").eq("conversation_id",opened.data);assert.ifError(read.error);assert.equal(read.data?.length,1);assert.equal(read.data?.[0].body,"local integration hello");
+   const edited=await userB.rpc("message_edit",{p_message:sent.data.id,p_body:"edited hello"});assert.ifError(edited.error);assert.equal(edited.data.body,"edited hello");
+   const forgedEdit=await userA.rpc("message_edit",{p_message:sent.data.id,p_body:"A cannot edit B"});assert.ok(forgedEdit.error,"other participant must not edit sender's message");
+   const deleted=await userB.rpc("message_delete",{p_message:sent.data.id});assert.ifError(deleted.error);assert.equal(deleted.data,true);
    const a=await app.inject({method:"PATCH",url:"/v1/me/profile",headers:{authorization:`Bearer ${tokens[0]}`},payload:{display_name:"Local User A"}});
    assert.equal(a.statusCode,200,a.body); assert.equal(a.json().data.id,ids[0]);
    const b=await app.inject({method:"PATCH",url:"/v1/me/profile",headers:{authorization:`Bearer ${tokens[1]}`},payload:{display_name:"Local User B"}});
