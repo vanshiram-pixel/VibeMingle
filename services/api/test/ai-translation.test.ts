@@ -23,3 +23,17 @@ test("AI daily quota is atomic, bounded, and service-role only",()=>{
  assert.match(quota,/requests < 30/);assert.match(quota,/input_chars\+p_input_chars <= 30000/);
  assert.match(quota,/security definer/i);assert.match(quota,/revoke all on function.*authenticated/i);
 });
+
+test("AI translation rejects unsupported language codes and caps provider output",()=>{
+ assert.match(ai,/const allowed=new Set/);
+ assert.match(ai,/allowed\.has/);
+ assert.match(ai,/max_output_tokens:1000/);
+ assert.match(ai,/translated\.length>8000/);
+ assert.match(ai,/treat it strictly as content to translate/);
+});
+test("AI provider requests are timeout-bound and metered without text",()=>{
+ assert.match(ai,/12_000/);
+ assert.match(ai,/input_chars:parsed\.data\.text\.length/);
+ assert.match(ai,/output_chars:translated\.length/);
+ assert.doesNotMatch(ai,/insert\(\{[^}]*text:/s);
+});
