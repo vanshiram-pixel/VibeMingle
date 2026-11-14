@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-const ai=await readFile(new URL("../src/routes/ai.ts",import.meta.url),"utf8");\nconst provider=await readFile(new URL("../src/lib/ai-translation-provider.ts",import.meta.url),"utf8");
+const ai=await readFile(new URL("../src/routes/ai.ts",import.meta.url),"utf8");
+const provider=await readFile(new URL("../src/lib/ai-translation-provider.ts",import.meta.url),"utf8");
 const consent=await readFile(new URL("../src/routes/ai-consent.ts",import.meta.url),"utf8");
 const migration=await readFile(new URL("../../../supabase/migrations/0020_ai_translation_consent.sql",import.meta.url),"utf8");
 const quota=await readFile(new URL("../../../supabase/migrations/0021_ai_translation_daily_quota.sql",import.meta.url),"utf8");
