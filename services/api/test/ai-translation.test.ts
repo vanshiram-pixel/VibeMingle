@@ -103,7 +103,7 @@ test("AI translation records usage only after a valid provider result",()=>{
 });
 
 
-test("AI global daily budget is atomic and checked before provider spend",()=>{
+test("AI global daily budget is atomic and checked before provider spend",async ()=>{
  assert.match(ai,/consume_ai_translation_global_limit/);
  assert.match(ai,/AI_GLOBAL_DAILY_LIMIT/);
  assert.match(ai,/AI_GLOBAL_LIMIT_UNAVAILABLE/);
