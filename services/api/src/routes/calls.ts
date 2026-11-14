@@ -89,7 +89,11 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   const body=sanctionSchema.safeParse(request.body);if(!body.success)return reply.code(400).send({error:{code:"INVALID_SANCTION",message:"Sanction details are invalid."}});
   const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
-  if(body.data.type==="permanent_ban"&&!((await db.from("admin_roles").select("role").eq("user_id",user.id).eq("enabled",true).maybeSingle()).data?.role==="superadmin"))return reply.code(403).send({error:{code:"BAN_FORBIDDEN",message:"Only superadmins can issue permanent bans."}});
+  const {data:roleRow,error:roleError}=await db.from("admin_roles").select("role").eq("user_id",user.id).eq("enabled",true).maybeSingle();
+  if(roleError||!roleRow)return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Enabled admin role required."}});
+  const role=roleRow.role;
+  const allowed=role==="superadmin"||(role==="admin"&&body.data.type!=="permanent_ban")||(role==="moderator"&&body.data.type==="warning");
+  if(!allowed)return reply.code(403).send({error:{code:"SANCTION_ROLE_FORBIDDEN",message:"Your role cannot issue this sanction type."}});
   const expiresAt=body.data.type==="temporary_suspension"&&body.data.durationHours?new Date(Date.now()+body.data.durationHours*3600000).toISOString():null;
   const {data,error}=await db.from("user_sanctions").insert({user_id:body.data.userId,sanction_type:body.data.type,reason:body.data.reason,expires_at:expiresAt,issued_by:user.id}).select("id,user_id,sanction_type,reason,starts_at,expires_at,active").single();
   if(error)return reply.code(503).send({error:{code:"SANCTION_FAILED",message:"Sanction could not be issued."}});
