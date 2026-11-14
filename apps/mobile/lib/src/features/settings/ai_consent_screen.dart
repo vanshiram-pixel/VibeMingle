@@ -37,7 +37,7 @@ class _AiConsentScreenState extends State<AiConsentScreen> {
       final response = await http.get(Uri.parse('${AppConfig.apiBaseUrl}/v1/ai/consent'), headers: _headers).timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) throw Exception();
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      if (mounted) setState(() => _granted = data['granted'] == true);
+      if (mounted) final consent = data['data'] as Map<String, dynamic>?;\n      if (mounted) setState(() => _granted = consent?['granted'] == true && consent?['withdrawn_at'] == null);
     } catch (_) {
       if (mounted) setState(() => _message = 'Consent status नहीं मिल पाया। API/server जाँचें।');
     } finally {
@@ -48,7 +48,7 @@ class _AiConsentScreenState extends State<AiConsentScreen> {
   Future<void> _setConsent(bool granted) async {
     setState(() { _saving = true; _message = null; _translation = null; });
     try {
-      final response = await http.put(Uri.parse('${AppConfig.apiBaseUrl}/v1/ai/consent'), headers: _headers, body: jsonEncode({'granted': granted})).timeout(const Duration(seconds: 10));
+      final response = await http.put(Uri.parse('${AppConfig.apiBaseUrl}/v1/ai/consent'), headers: _headers, body: jsonEncode({'granted': granted, 'policyVersion': 'ai-translation-v1'})).timeout(const Duration(seconds: 10));
       if (response.statusCode < 200 || response.statusCode >= 300) throw Exception();
       if (mounted) setState(() { _granted = granted; _message = granted ? 'AI translation consent चालू है।' : 'AI translation consent वापस ले लिया।'; });
     } catch (_) {
