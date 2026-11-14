@@ -40,3 +40,6 @@ The repository currently contains UI scaffolds and SDK dependency only. Generate
 - Home sends `POST /v1/presence/heartbeat` at startup, every 45 seconds, and on app resume. Heartbeats expire from online projection after 90 seconds.
 - `GET /v1/friends` now includes privacy-filtered `is_online`; no raw last-seen timestamp is exposed.
 - Realtime push/presence broadcasting is not yet enabled; current online indicator is heartbeat-based polling/refresh.
+
+- Friend Requests screen: send by exact target UUID; list incoming/outgoing; accept, reject, or cancel pending requests. Open from the envelope icon on Friends.
+- Social routes include authenticated friend request CRUD actions, friend list/unfriend, block/unblock, presence heartbeat and privacy settings.
