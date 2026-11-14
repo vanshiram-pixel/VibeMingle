@@ -38,7 +38,7 @@ class _AiConsentScreenState extends State<AiConsentScreen> {
       if (response.statusCode != 200) throw Exception();
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final consent = data['data'] as Map<String, dynamic>?;
-      if (mounted setState(() => _granted = consent?['granted'] == true && consent?['withdrawn_at'] == null);
+      if (mounted) setState(() => _granted = consent?['granted'] == true && consent?['withdrawn_at'] == null);
     } catch (_) {
       if (mounted) setState(() => _message = 'Consent status नहीं मिल पाया। API/server जाँचें।');
     } finally {
