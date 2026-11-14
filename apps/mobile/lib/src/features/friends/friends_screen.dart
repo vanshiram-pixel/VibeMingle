@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/app_config.dart';
+import '../settings/presence_settings_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -67,7 +68,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Friends')),
+    appBar: AppBar(title: const Text('Friends'), actions: [IconButton(tooltip: 'Presence privacy', icon: const Icon(Icons.visibility), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PresenceSettingsScreen())))],),
     body: _loading ? const Center(child: CircularProgressIndicator())
       : _error != null ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(_error!), const SizedBox(height: 12), FilledButton(onPressed: loadFriends, child: const Text('Retry'))
