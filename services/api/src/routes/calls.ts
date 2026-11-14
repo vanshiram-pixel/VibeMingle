@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { authenticatedSupabase } from "../plugins/supabase-user.js";
+import { liveKitConfigured } from "../domain/video/livekit-provider.js";
 const joinSchema=z.object({sessionId:z.string().uuid()}).strict();
 export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
  app.post("/v1/calls/token",async(request,reply)=>{
