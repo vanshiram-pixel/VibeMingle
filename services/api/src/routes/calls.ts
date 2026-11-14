@@ -8,11 +8,50 @@ import { liveKitConfigured, mintLiveKitToken } from "../domain/video/livekit-pro
 const joinSchema=z.object({sessionId:z.string().uuid()}).strict();
 const leaveSchema=z.object({reason:z.string().max(80).optional()}).strict();
 const reportSchema=z.object({category:z.enum(["harassment","sexual_content","minor_safety","spam","hate","violence","impersonation","scam","other"]),description:z.string().max(2000).optional()}).strict();
+const moderationStatusSchema=z.object({status:z.enum(["triaged","investigating","actioned","dismissed"])}).strict();
+const sanctionSchema=z.object({userId:z.string().uuid(),type:z.enum(["warning","temporary_suspension","permanent_ban"]),reason:z.string().min(3).max(2000),durationHours:z.number().int().min(1).max(8760).optional()}).strict();
+async function requireModerator(db:any,userId:string):Promise<boolean>{
+ const {data,error}=await db.from("admin_roles").select("role").eq("user_id",userId).eq("enabled",true).maybeSingle();
+ return !error&&!!data&&["moderator","admin","superadmin"].includes(data.role);
+}
 function adminDb(){
  if(!env.supabaseUrl||!env.supabaseServiceRoleKey) throw new Error("Server database credentials are not configured");
  return createClient(env.supabaseUrl,env.supabaseServiceRoleKey,{auth:{persistSession:false,autoRefreshToken:false}});
 }
 export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
+ app.get("/v1/admin/moderation/reports",async(request,reply)=>{
+  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
+  const query=z.object({status:z.enum(["submitted","triaged","investigating","actioned","dismissed"]).optional(),limit:z.coerce.number().int().min(1).max(100).optional()}).safeParse(request.query);
+  if(!query.success)return reply.code(400).send({error:{code:"INVALID_QUERY",message:"Report filters are invalid."}});
+  let q=db.from("user_reports").select("id,reporter_id,reported_user_id,category,description,context_type,context_id,status,created_at").order("created_at",{ascending:true}).limit(query.data.limit??50);
+  if(query.data.status)q=q.eq("status",query.data.status);
+  const {data,error}=await q;if(error)return reply.code(503).send({error:{code:"MODERATION_READ_FAILED",message:"Report queue unavailable."}});
+  return reply.send({data});
+ });
+ app.patch("/v1/admin/moderation/reports/:reportId",async(request,reply)=>{
+  const params=z.object({reportId:z.string().uuid()}).safeParse(request.params);const body=moderationStatusSchema.safeParse(request.body);
+  if(!params.success||!body.success)return reply.code(400).send({error:{code:"INVALID_MODERATION_ACTION",message:"Report action is invalid."}});
+  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
+  const {data:report}=await db.from("user_reports").select("reported_user_id").eq("id",params.data.reportId).maybeSingle();
+  if(!report)return reply.code(404).send({error:{code:"REPORT_NOT_FOUND",message:"Report not found."}});
+  const {error}=await db.from("user_reports").update({status:body.data.status}).eq("id",params.data.reportId);
+  if(error)return reply.code(503).send({error:{code:"MODERATION_UPDATE_FAILED",message:"Report status could not be updated."}});
+  await db.from("moderation_audit_log").insert({actor_id:user.id,action:"report_"+body.data.status,target_user_id:report.reported_user_id,report_id:params.data.reportId,details:{}});
+  return reply.send({updated:true,status:body.data.status});
+ });
+ app.post("/v1/admin/moderation/sanctions",async(request,reply)=>{
+  const body=sanctionSchema.safeParse(request.body);if(!body.success)return reply.code(400).send({error:{code:"INVALID_SANCTION",message:"Sanction details are invalid."}});
+  const {user}=await authenticatedSupabase(request);const db=adminDb();
+  if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
+  if(body.data.type==="permanent_ban"&&!((await db.from("admin_roles").select("role").eq("user_id",user.id).eq("enabled",true).maybeSingle()).data?.role==="superadmin"))return reply.code(403).send({error:{code:"BAN_FORBIDDEN",message:"Only superadmins can issue permanent bans."}});
+  const expiresAt=body.data.type==="temporary_suspension"&&body.data.durationHours?new Date(Date.now()+body.data.durationHours*3600000).toISOString():null;
+  const {data,error}=await db.from("user_sanctions").insert({user_id:body.data.userId,sanction_type:body.data.type,reason:body.data.reason,expires_at:expiresAt,issued_by:user.id}).select("id,user_id,sanction_type,reason,starts_at,expires_at,active").single();
+  if(error)return reply.code(503).send({error:{code:"SANCTION_FAILED",message:"Sanction could not be issued."}});
+  await db.from("moderation_audit_log").insert({actor_id:user.id,action:"sanction_"+body.data.type,target_user_id:body.data.userId,sanction_id:data.id,details:{durationHours:body.data.durationHours??null}});
+  return reply.code(201).send({data});
+ });
  app.post("/v1/calls/token",async(request,reply)=>{
   const parsed=joinSchema.safeParse(request.body);
   if(!parsed.success)return reply.code(400).send({error:{code:"INVALID_SESSION",message:"Session id is invalid."}});
