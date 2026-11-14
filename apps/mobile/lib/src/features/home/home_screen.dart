@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/app_config.dart';
 import '../calls/video_call_screen.dart';
 import '../friends/friends_screen.dart';
+import '../profile/edit_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -52,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Text('VibeMingle'),
-      actions: [IconButton(
+      actions: [IconButton(tooltip: 'Edit profile', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())), icon: const Icon(Icons.account_circle)), IconButton(
         tooltip: 'Sign out',
         onPressed: () => Supabase.instance.client.auth.signOut(),
         icon: const Icon(Icons.logout),
