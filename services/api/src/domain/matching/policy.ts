@@ -9,5 +9,5 @@ export function compatible(a:QueueTicket,b:QueueTicket):boolean {
  return true;
 }
 export function sanitizePreferences(input:MatchPreferences):MatchPreferences {
- return {region:input.region?.slice(0,12),language:input.language?.slice(0,12),interests:[...(input.interests??[])].slice(0,10).map(x=>x.slice(0,32)),genderFilter:input.genderFilter??"any"};
+ return { ...(input.region ? {region:input.region.slice(0,12)} : {}), ...(input.language ? {language:input.language.slice(0,12)} : {}), interests:[...(input.interests??[])].slice(0,10).map(x=>x.slice(0,32)),genderFilter:input.genderFilter??"any"};
 }
