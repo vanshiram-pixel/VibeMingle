@@ -51,13 +51,9 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   if(!params.success||!body.success)return reply.code(400).send({error:{code:"INVALID_MODERATION_ACTION",message:"Report action is invalid."}});
   const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   if(!await requireModerator(db,user.id))return reply.code(403).send({error:{code:"MODERATION_FORBIDDEN",message:"Moderator access required."}});
-  const {data:report}=await db.from("user_reports").select("reported_user_id").eq("id",params.data.reportId).maybeSingle();
-  if(!report)return reply.code(404).send({error:{code:"REPORT_NOT_FOUND",message:"Report not found."}});
-  const {error}=await db.from("user_reports").update({status:body.data.status}).eq("id",params.data.reportId);
-  if(error)return reply.code(503).send({error:{code:"MODERATION_UPDATE_FAILED",message:"Report status could not be updated."}});
-  const {error:auditError}=await db.from("moderation_audit_log").insert({actor_id:user.id,action:"report_"+body.data.status,target_user_id:report.reported_user_id,report_id:params.data.reportId,details:{}});
-  if(auditError)return reply.code(503).send({error:{code:"AUDIT_WRITE_FAILED",message:"Report updated but audit write failed; investigate immediately."}});
-  return reply.send({updated:true,status:body.data.status});
+  const {data,error}=await db.rpc("moderation_update_report_with_audit",{p_report_id:params.data.reportId,p_status:body.data.status,p_actor_id:user.id});
+  if(error){if(error.message?.includes("report not found"))return reply.code(404).send({error:{code:"REPORT_NOT_FOUND",message:"Report not found."}});request.log.error({err:error},"atomic report moderation failed");return reply.code(503).send({error:{code:"MODERATION_TRANSACTION_FAILED",message:"Report action and audit transaction failed; no change was committed."}});}
+  return reply.send(data);
  });
  app.get("/v1/admin/moderation/audit",async(request,reply)=>{
   const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
@@ -74,12 +70,9 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
   const {data:role}=await db.from("admin_roles").select("role").eq("user_id",user.id).eq("enabled",true).maybeSingle();
   if(!role||!["admin","superadmin"].includes(role.role))return reply.code(403).send({error:{code:"SANCTION_REVOKE_FORBIDDEN",message:"Admin access required."}});
-  const {data,error}=await db.from("user_sanctions").update({active:false}).eq("id",params.data.sanctionId).eq("active",true).select("id,user_id,sanction_type").maybeSingle();
-  if(error)return reply.code(503).send({error:{code:"SANCTION_REVOKE_FAILED",message:"Sanction could not be revoked."}});
-  if(!data)return reply.code(404).send({error:{code:"SANCTION_NOT_FOUND",message:"Active sanction not found."}});
-  const {error:auditError}=await db.from("moderation_audit_log").insert({actor_id:user.id,action:"sanction_revoked",target_user_id:data.user_id,sanction_id:data.id,details:{}});
-  if(auditError)return reply.code(503).send({error:{code:"AUDIT_WRITE_FAILED",message:"Sanction revoked but audit write failed; investigate immediately."}});
-  return reply.send({revoked:true,id:data.id});
+  const {data,error}=await db.rpc("moderation_revoke_sanction_with_audit",{p_sanction_id:params.data.sanctionId,p_actor_id:user.id});
+  if(error){if(error.message?.includes("active sanction not found"))return reply.code(404).send({error:{code:"SANCTION_NOT_FOUND",message:"Active sanction not found."}});request.log.error({err:error},"atomic sanction revoke failed");return reply.code(503).send({error:{code:"SANCTION_TRANSACTION_FAILED",message:"Revoke and audit transaction failed; no change was committed."}});}
+  return reply.send(data);
  });
  app.get("/v1/admin/moderation/sanctions",async(request,reply)=>{
   const auth=await requireAdminAal2(request,reply);if(!auth)return;const {user}=auth;const db=adminDb();
