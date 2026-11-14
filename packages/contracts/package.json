@@ -1,0 +1,9 @@
+{
+  "name": "@vibemingle/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { "./health": "./src/health.ts" },
+  "scripts": { "typecheck": "tsc --noEmit", "lint": "echo 'lint pending' ", "test": "echo 'contract tests pending' " },
+  "devDependencies": { "typescript": "^5.7.2" }
+}
