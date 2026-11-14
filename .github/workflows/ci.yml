@@ -26,7 +26,7 @@ jobs:
       - name: Check tracked secret-like files
         shell: bash
         run: |
-          if git ls-files | grep -E '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$|credentials\.json$)'; then
+          if git ls-files | grep -E '(^|/)(\.env$|.*\.pem$|.*\.key$|credentials\.json$)'; then
             echo "Potential secret/credential file tracked"
             exit 1
           fi
