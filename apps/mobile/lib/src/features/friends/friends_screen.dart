@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/app_config.dart';
 import '../settings/presence_settings_screen.dart';
 import 'friend_requests_screen.dart';
+import 'discover_users_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -69,7 +70,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Friends'), actions: [IconButton(tooltip: 'Friend requests', icon: const Icon(Icons.mail), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendRequestsScreen()))), IconButton(tooltip: 'Presence privacy', icon: const Icon(Icons.visibility), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PresenceSettingsScreen())))],),
+    appBar: AppBar(title: const Text('Friends'), actions: [IconButton(tooltip: 'Discover people', icon: const Icon(Icons.person_search), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DiscoverUsersScreen()))), IconButton(tooltip: 'Friend requests', icon: const Icon(Icons.mail), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendRequestsScreen()))), IconButton(tooltip: 'Presence privacy', icon: const Icon(Icons.visibility), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PresenceSettingsScreen())))],),
     body: _loading ? const Center(child: CircularProgressIndicator())
       : _error != null ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(_error!), const SizedBox(height: 12), FilledButton(onPressed: loadFriends, child: const Text('Retry'))
