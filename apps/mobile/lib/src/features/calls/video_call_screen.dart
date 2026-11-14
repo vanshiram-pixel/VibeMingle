@@ -25,7 +25,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       final room = Room();
       _listener = room.createListener();
       _listener!
-        ..on<RoomReconnectingEvent>((_) { if (mounted) setState(() => _reconnecting = true); })\n        ..on<RoomResumingEvent>((_) { if (mounted) setState(() => _reconnecting = true); })\n        ..on<RoomReconnectedEvent>((_) { if (mounted) setState(() => _reconnecting = false); })\n        ..on<ParticipantConnectedEvent>((_) { if (mounted) setState(() {}); })
+        ..on<RoomReconnectingEvent>((_) { if (mounted) setState(() => _reconnecting = true); })
+        ..on<RoomResumingEvent>((_) { if (mounted) setState(() => _reconnecting = true); })
+        ..on<RoomReconnectedEvent>((_) { if (mounted) setState(() => _reconnecting = false); })
+        ..on<ParticipantConnectedEvent>((_) { if (mounted) setState(() {}); })
         ..on<ParticipantDisconnectedEvent>((_) { if (mounted) setState(() {}); })
         ..on<TrackSubscribedEvent>((_) { if (mounted) setState(() {}); })
         ..on<TrackUnsubscribedEvent>((_) { if (mounted) setState(() {}); })
