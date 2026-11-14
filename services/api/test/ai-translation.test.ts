@@ -78,3 +78,26 @@ test("AI quota uses UTC day buckets and rejects invalid character counts",()=>{
  assert.match(quota,/input_chars\+p_input_chars <= 30000/i);
  assert.match(quota,/grant execute on function public\.consume_ai_translation_quota\(uuid,integer\) to service_role/i);
 });
+
+
+test("AI translation applies consent, feature, rate and quota gates before provider spend",()=>{
+ const consent=ai.indexOf("AI_CONSENT_REQUIRED");
+ const disabled=ai.indexOf("AI_DISABLED");
+ const rate=ai.indexOf("consume_ai_translation_rate_limit");
+ const quota=ai.indexOf("consume_ai_translation_quota");
+ const providerCall=ai.indexOf("requestTranslation(");
+ assert.ok(consent>0 && disabled>consent && rate>disabled && quota>rate && providerCall>quota);
+ assert.match(ai,/if\(rateError\)return reply\.code\(503\)/);
+ assert.match(ai,/if\(!rateAllowed\)return reply\.code\(429\)/);
+ assert.match(ai,/if\(quotaError\)return reply\.code\(503\)/);
+ assert.match(ai,/if\(!quota\)return reply\.code\(429\)/);
+});
+
+test("AI translation records usage only after a valid provider result",()=>{
+ const providerCall=ai.indexOf("requestTranslation(");
+ const meter=ai.indexOf("ai_translation_usage").lastIndexOf("ai_translation_usage");
+ const meterInsert=ai.indexOf(".insert({user_id:user.id,provider:");
+ const response=ai.indexOf("return reply.send({data:{translated");
+ assert.ok(providerCall>0 && meter>providerCall && meterInsert>meter && response>meterInsert);
+ assert.match(ai,/if\(meterError\)return reply\.code\(503\)/);
+});
