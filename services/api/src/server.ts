@@ -1,6 +1,9 @@
 import Fastify from "fastify";
 import { createHealthResponse } from "@vibemingle/contracts/health";
 import { env } from "./config/env.js";
+import { registerAuthRoutes } from "./routes/auth.js";
+import { registerMeRoutes } from "./routes/me.js";
+import { registerOnboardingRoutes } from "./routes/onboarding.js";
 
 const app = Fastify({
   logger: { level: env.logLevel },
@@ -8,7 +11,7 @@ const app = Fastify({
   disableRequestLogging: false,
 });
 
-app.get("/health", async () => createHealthResponse(env.appVersion));
+await app.register(registerAuthRoutes);\nawait app.register(registerMeRoutes);\nawait app.register(registerOnboardingRoutes);\n\napp.get("/health", async () => createHealthResponse(env.appVersion));
 app.get("/ready", async (_request, reply) => {
   // Readiness will check DB/provider dependencies once integrations are configured.
   return reply.code(200).send({ ready: true, checks: { scaffold: "ok" } });
