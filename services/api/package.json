@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'lint pending'",
-    "test": "node --test"
+    "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
     "@vibemingle/contracts": "0.1.0",
