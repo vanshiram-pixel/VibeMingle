@@ -1,0 +1,25 @@
+-- Public avatar bucket: avatars are intentionally public profile imagery.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars','avatars',true,5242880,array['image/jpeg','image/png','image/webp'])
+on conflict (id) do update set public=true,file_size_limit=5242880,allowed_mime_types=array['image/jpeg','image/png','image/webp'];
+
+drop policy if exists "Avatar owner uploads" on storage.objects;
+create policy "Avatar owner uploads" on storage.objects
+for insert to authenticated
+with check (bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text);
+
+drop policy if exists "Avatar owner updates" on storage.objects;
+create policy "Avatar owner updates" on storage.objects
+for update to authenticated
+using (bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text)
+with check (bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text);
+
+drop policy if exists "Avatar owner deletes" on storage.objects;
+create policy "Avatar owner deletes" on storage.objects
+for delete to authenticated
+using (bucket_id='avatars' and (storage.foldername(name))[1]=auth.uid()::text);
+
+-- Public read is limited to the dedicated avatars bucket.
+drop policy if exists "Avatar images are publicly readable" on storage.objects;
+create policy "Avatar images are publicly readable" on storage.objects
+for select to anon, authenticated using (bucket_id='avatars');
