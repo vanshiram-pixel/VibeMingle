@@ -95,7 +95,7 @@ test("AI translation applies consent, feature, rate and quota gates before provi
 
 test("AI translation records usage only after a valid provider result",()=>{
  const providerCall=ai.indexOf("requestTranslation(");
- const meter=ai.indexOf("ai_translation_usage").lastIndexOf("ai_translation_usage");
+ const meter=ai.lastIndexOf("ai_translation_usage");
  const meterInsert=ai.indexOf(".insert({user_id:user.id,provider:");
  const response=ai.indexOf("return reply.send({data:{translated");
  assert.ok(providerCall>0 && meter>providerCall && meterInsert>meter && response>meterInsert);
