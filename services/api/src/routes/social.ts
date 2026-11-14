@@ -59,7 +59,36 @@ export async function registerSocialRoutes(app: FastifyInstance): Promise<void> 
   });
 
   app.get("/v1/friends", async (request, reply) => {
-    await authenticatedSupabase(request);
-    return reply.code(501).send({ error: { code: "FRIENDS_NOT_CONFIGURED", message: "Friend list projection with block filtering is not configured." } });
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("friend_list_safe");
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
+  });
+
+  app.delete("/v1/friends/:friendId", async (request, reply) => {
+    const params = z.object({ friendId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: { code: "INVALID_TARGET", message: "Friend id is invalid." } });
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("friendship_remove", { p_friend: params.data.friendId });
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
+  });
+
+  app.post("/v1/blocks/:userId", async (request, reply) => {
+    const params = z.object({ userId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: { code: "INVALID_TARGET", message: "User id is invalid." } });
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("user_block_create", { p_target: params.data.userId });
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
+  });
+
+  app.delete("/v1/blocks/:userId", async (request, reply) => {
+    const params = z.object({ userId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: { code: "INVALID_TARGET", message: "User id is invalid." } });
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("user_block_remove", { p_target: params.data.userId });
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
   });
 }
