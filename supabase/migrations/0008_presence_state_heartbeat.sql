@@ -17,7 +17,8 @@ begin
 end;
 $$;
 
-create or replace function public.friend_list_safe()
+drop function if exists public.friend_list_safe();
+create function public.friend_list_safe()
 returns table(friend_id uuid,display_name text,avatar_path text,created_at timestamptz,
  presence_visibility text,show_online boolean,is_online boolean)
 language sql security definer set search_path=''
