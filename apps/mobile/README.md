@@ -29,3 +29,10 @@ flutter run \
 The repository currently contains UI scaffolds and SDK dependency only. Generated Android/iOS platform projects, secure API token fetching, room connect, camera/mic tracks, participant rendering, and end-to-end call tests must still be implemented and verified. Do not place LiveKit API secrets in the mobile app.
 
 **Safety note:** profile creation alone does not grant call/matching eligibility. The consent-history and jurisdiction-appropriate age-assurance service must be implemented and verified server-side before enabling those features.
+
+## Friends and presence UI
+- Home includes a Friends navigation entry.
+- Friends screen calls `GET /v1/friends` and supports refresh, unfriend (`DELETE /v1/friends/:friendId`), and block (`POST /v1/blocks/:userId`).
+- Friends app bar opens Presence Privacy settings (`PATCH /v1/presence/settings`).
+- Configure `API_BASE_URL` and apply migrations `0006` and `0007` before these API actions can work.
+- Presence controls save privacy preferences; realtime online/offline presence and privacy enforcement at the broadcast layer remain pending.
