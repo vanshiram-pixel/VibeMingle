@@ -22,7 +22,7 @@ async function enforceCallSanction(db:any,userId:string,reply:any):Promise<boole
 }
 async function requireAdminAal2(request:any,reply:any):Promise<{user:{id:string;accessToken:string};client:any}|null>{
  const auth=await authenticatedSupabase(request);
- const {data,error}=await auth.client.auth.mfa.getAuthenticatorAssuranceLevel();
+ const {data,error}=await auth.client.auth.mfa.getAuthenticatorAssuranceLevel(auth.user.accessToken);
  if(error||data?.currentLevel!=="aal2"){reply.code(403).send({error:{code:"ADMIN_MFA_REQUIRED",message:"Admin actions require verified MFA (AAL2)."}});return null;}
  return auth;
 }
