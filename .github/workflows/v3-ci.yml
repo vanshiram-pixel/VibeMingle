@@ -17,6 +17,7 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run typecheck --workspace services/api
+      - run: npm test --workspace services/api
       - run: npm run build --workspace services/api
 
   mobile:
