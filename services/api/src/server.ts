@@ -11,7 +11,11 @@ const app = Fastify({
   disableRequestLogging: false,
 });
 
-await app.register(registerAuthRoutes);\nawait app.register(registerMeRoutes);\nawait app.register(registerOnboardingRoutes);\n\napp.get("/health", async () => createHealthResponse(env.appVersion));
+await app.register(registerAuthRoutes);
+await app.register(registerMeRoutes);
+await app.register(registerOnboardingRoutes);
+
+app.get("/health", async () => createHealthResponse(env.appVersion));
 app.get("/ready", async (_request, reply) => {
   // Readiness will check DB/provider dependencies once integrations are configured.
   return reply.code(200).send({ ready: true, checks: { scaffold: "ok" } });
