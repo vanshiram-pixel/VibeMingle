@@ -36,3 +36,14 @@ RLS coverage is targeted at profile/consent/block/report read isolation, profile
 - API test suite: 20 tests PASS; V3 CI [43603030071](https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43603030071).
 - A temporary Fastify protected-route harness surfaced a 500-vs-401 mapping discrepancy; explicit AuthenticationError mapping was added in server error handling. The harness was removed because it didn't reliably reproduce the production server setup. Treat this as a fix requiring a future end-to-end API server test—not as independently integration-verified.
 - No authenticated Supabase API/IDOR integration has been run yet. Current evidence is local DB RLS + API unit/static contracts only.
+
+
+## Local authenticated API integration harness (Nov 14)
+
+Added opt-in `services/api/test/local-authenticated-api.integration.test.ts`:
+- guarded by `SUPABASE_LOCAL_INTEGRATION=1` and local-only hostname allowlist (localhost/127.0.0.1/supabase/kong); hosted URLs cannot activate it.
+- creates two disposable local Auth users through local admin API; obtains password sign-in tokens; Fastify injects real bearer tokens into `/v1/me` and `PATCH /v1/me/profile`.
+- checks profile identity follows authenticated UUID, each user sees their own profile, strict schema rejects forged `id`, and A cannot overwrite B.
+- users deleted in finally; test is skipped by default in regular CI because it needs local Supabase Auth running.
+- regular Repository CI and V3 CI PASS after adding the harness: Repository [43603260509](https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43603260509), V3 [43603260438](https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43603260438).
+- Important: CI success here typechecks/runs normal suite; the opt-in integration itself has NOT yet been executed against local Supabase Auth. Need run it in the local Supabase workflow before claiming integration PASS.
