@@ -41,6 +41,18 @@ export async function registerCallRoutes(app:FastifyInstance):Promise<void>{
   if(error){request.log.error({err:error},"call report insert failed");return reply.code(503).send({error:{code:"REPORT_UNAVAILABLE",message:"Report could not be submitted."}});}
   return reply.code(201).send({submitted:true});
  });
+ app.post("/v1/calls/:sessionId/block",async(request,reply)=>{
+  const params=z.object({sessionId:z.string().uuid()}).safeParse(request.params);
+  if(!params.success)return reply.code(400).send({error:{code:"INVALID_SESSION",message:"Session id is invalid."}});
+  const {user,client}=await authenticatedSupabase(request);const db=adminDb();
+  const {data:session,error}=await db.from("match_sessions").select("participant_a,participant_b").eq("id",params.data.sessionId).maybeSingle();
+  if(error||!session)return reply.code(404).send({error:{code:"SESSION_NOT_FOUND",message:"Call session not found."}});
+  const target=session.participant_a===user.id?session.participant_b:session.participant_b===user.id?session.participant_a:null;
+  if(!target)return reply.code(403).send({error:{code:"CALL_NOT_AUTHORIZED",message:"You are not a participant in this call."}});
+  const {data,error:blockError}=await client.rpc("user_block_create",{p_target:target});
+  if(blockError)return reply.code(400).send({error:{code:"BLOCK_FAILED",message:"User could not be blocked."}});
+  return reply.send({data});
+ });
  app.post("/v1/calls/:sessionId/leave",async(request,reply)=>{
   const params=z.object({sessionId:z.string().uuid()}).safeParse(request.params);
   if(!params.success)return reply.code(400).send({error:{code:"INVALID_SESSION",message:"Session id is invalid."}});
