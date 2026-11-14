@@ -1,24 +1,65 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { authenticatedSupabase } from "../plugins/supabase-user.js";
-const requestSchema=z.object({targetUserId:z.string().uuid()}).strict();
-export async function registerSocialRoutes(app:FastifyInstance):Promise<void>{
- app.post("/v1/friends/requests",async(request,reply)=>{
-  const parsed=requestSchema.safeParse(request.body);if(!parsed.success)return reply.code(400).send({error:{code:"INVALID_TARGET",message:"Target user id is invalid."}});
-  const {user,client}=await authenticatedSupabase(request);if(user.id===parsed.data.targetUserId)return reply.code(400).send({error:{code:"SELF_REQUEST",message:"You cannot friend yourself."}});
-  // Fail closed until trusted transaction enforces blocks, sanctions, duplicates and rate limits.
-  const {data,error}=await client.rpc("friend_request_create",{p_target:parsed.data.targetUserId});
-  if(error)return reply.code(error.code==="PGRST202"?501:400).send({error:{code:"FRIEND_REQUEST_UNAVAILABLE",message:"Friend request service is not configured."}});
-  return reply.code(201).send({data});
- });
- app.get("/v1/friends/requests",async(request,reply)=>{
-  const {user,client}=await authenticatedSupabase(request);
-  const {data,error}=await client.from("friend_requests").select("id,sender_id,receiver_id,status,created_at").or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`).order("created_at",{ascending:false}).limit(100);
-  if(error)return reply.code(400).send({error:{code:"FRIEND_REQUESTS_READ_FAILED",message:"Friend requests unavailable."}});
-  return reply.send({data});
- });
- app.get("/v1/friends",async(request,reply)=>{
-  await authenticatedSupabase(request);
-  return reply.code(501).send({error:{code:"FRIENDS_NOT_CONFIGURED",message:"Friend list projection with block filtering is not configured."}});
- });
+
+const requestSchema = z.object({ targetUserId: z.string().uuid() }).strict();
+const requestIdSchema = z.object({ requestId: z.string().uuid() }).strict();
+const responseSchema = z.object({ action: z.enum(["accept", "reject"]) }).strict();
+
+function rpcError(reply: any, error: { code?: string; message?: string }) {
+  const code = error.code;
+  const message = error.message ?? "";
+  if (code === "28000") return reply.code(401).send({ error: { code: "UNAUTHENTICATED", message: "Sign in again." } });
+  if (code === "42501") return reply.code(403).send({ error: { code: "REQUEST_UNAVAILABLE", message: "Request is unavailable or access is not allowed." } });
+  if (code === "23505") return reply.code(409).send({ error: { code: "REQUEST_CONFLICT", message: "Request is no longer pending or a friendship already exists." } });
+  if (code === "22023") return reply.code(400).send({ error: { code: "INVALID_REQUEST", message: "Request action or target is invalid." } });
+  return reply.code(400).send({ error: { code: "SOCIAL_ACTION_FAILED", message: "Social action could not be completed." } });
+}
+
+export async function registerSocialRoutes(app: FastifyInstance): Promise<void> {
+  app.post("/v1/friends/requests", async (request, reply) => {
+    const parsed = requestSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: { code: "INVALID_TARGET", message: "Target user id is invalid." } });
+    const { user, client } = await authenticatedSupabase(request);
+    if (user.id === parsed.data.targetUserId) return reply.code(400).send({ error: { code: "SELF_REQUEST", message: "You cannot friend yourself." } });
+    const { data, error } = await client.rpc("friend_request_create", { p_target: parsed.data.targetUserId });
+    if (error) return rpcError(reply, error);
+    return reply.code(201).send({ data });
+  });
+
+  app.post("/v1/friends/requests/:requestId/respond", async (request, reply) => {
+    const params = requestIdSchema.safeParse(request.params);
+    const body = responseSchema.safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: { code: "INVALID_REQUEST", message: "Request id or action is invalid." } });
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("friend_request_respond", {
+      p_request: params.data.requestId, p_action: body.data.action,
+    });
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
+  });
+
+  app.delete("/v1/friends/requests/:requestId", async (request, reply) => {
+    const params = requestIdSchema.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: { code: "INVALID_REQUEST", message: "Request id is invalid." } });
+    const { client } = await authenticatedSupabase(request);
+    const { data, error } = await client.rpc("friend_request_cancel", { p_request: params.data.requestId });
+    if (error) return rpcError(reply, error);
+    return reply.send({ data });
+  });
+
+  app.get("/v1/friends/requests", async (request, reply) => {
+    const { user, client } = await authenticatedSupabase(request);
+    const { data, error } = await client.from("friend_requests")
+      .select("id,sender_id,receiver_id,status,created_at,responded_at")
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order("created_at", { ascending: false }).limit(100);
+    if (error) return reply.code(400).send({ error: { code: "FRIEND_REQUESTS_READ_FAILED", message: "Friend requests unavailable." } });
+    return reply.send({ data });
+  });
+
+  app.get("/v1/friends", async (request, reply) => {
+    await authenticatedSupabase(request);
+    return reply.code(501).send({ error: { code: "FRIENDS_NOT_CONFIGURED", message: "Friend list projection with block filtering is not configured." } });
+  });
 }
