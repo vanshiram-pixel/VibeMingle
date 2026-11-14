@@ -5,14 +5,10 @@ import { env } from "../config/env.js";
 
 const schema=z.object({text:z.string().trim().min(1).max(4000),targetLanguage:z.string().regex(/^[a-z]{2,3}(-[A-Z]{2})?$/)}).strict();
 const allowed=new Set(["en","hi","es","fr","de","pt","ar","ja","ko","zh","ru","it","id","bn","ur","tr","th","vi"]);
-const windows=new Map<string,{start:number,count:number}>();
-let rateLimitCleanupCounter=0;
-function allow(user:string){const now=Date.now();if(++rateLimitCleanupCounter%128===0){for(const [key,value] of windows)if(now-value.start>=60_000)windows.delete(key);}const w=windows.get(user);if(!w||now-w.start>=60_000){windows.set(user,{start:now,count:1});return true;}if(w.count>=8)return false;w.count++;return true;}
 export async function registerAiRoutes(app:FastifyInstance){
  app.post("/v1/ai/translate",async(request,reply)=>{
   const parsed=schema.safeParse(request.body);if(!parsed.success||!allowed.has(parsed.data?.targetLanguage??""))return reply.code(400).send({error:{code:"INVALID_TRANSLATION",message:"Text or target language is invalid."}});
   const {user,client}=await authenticatedSupabase(request);
-  if(!allow(user.id))return reply.code(429).send({error:{code:"AI_RATE_LIMIT",message:"Translation limit reached. Try again shortly."}});
   const {data:consent,error:consentError}=await client.from("user_consents").select("granted,withdrawn_at").eq("user_id",user.id).eq("purpose","ai_translation").order("recorded_at",{ascending:false}).limit(1).maybeSingle();
   if(consentError)return reply.code(503).send({error:{code:"CONSENT_UNAVAILABLE",message:"AI consent could not be checked."}});
   if(!consent?.granted||consent.withdrawn_at)return reply.code(403).send({error:{code:"AI_CONSENT_REQUIRED",message:"Enable AI translation consent before using this feature."}});
@@ -20,6 +16,9 @@ export async function registerAiRoutes(app:FastifyInstance){
   if(!env.supabaseServiceRoleKey||!env.supabaseUrl)return reply.code(503).send({error:{code:"AI_QUOTA_UNAVAILABLE",message:"AI usage controls are unavailable."}});
   const {createClient}=await import("@supabase/supabase-js");
   const admin=createClient(env.supabaseUrl,env.supabaseServiceRoleKey,{auth:{persistSession:false}});
+  const {data:rateAllowed,error:rateError}=await admin.rpc("consume_ai_translation_rate_limit",{p_user_id:user.id});
+  if(rateError)return reply.code(503).send({error:{code:"AI_RATE_LIMIT_UNAVAILABLE",message:"AI rate controls are unavailable."}});
+  if(!rateAllowed)return reply.code(429).send({error:{code:"AI_RATE_LIMIT",message:"Translation limit reached. Try again shortly."}});
   const {data:quota,error:quotaError}=await admin.rpc("consume_ai_translation_quota",{p_user_id:user.id,p_input_chars:parsed.data.text.length});
   if(quotaError)return reply.code(503).send({error:{code:"AI_QUOTA_UNAVAILABLE",message:"AI usage controls are unavailable."}});
   if(!quota)return reply.code(429).send({error:{code:"AI_DAILY_LIMIT",message:"Daily translation limit reached."}});
