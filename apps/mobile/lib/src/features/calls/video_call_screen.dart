@@ -89,6 +89,23 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     catch(e){if(mounted)_show(e.toString());}
   }
 
+  Future<void> _block() async {
+    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Block this person?'),
+      content: const Text('They will not be matched with you again. The call will end.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Block')),
+      ],
+    ));
+    if (confirmed != true || !mounted) return;
+    try {
+      await _service.block(widget.sessionId);
+      _show('User blocked. Ending call.');
+      await _end();
+    } catch (e) { if (mounted) _show(e.toString()); }
+  }
+
   Future<void> _end() async {
     if (_leaving) return;
     setState(() => _leaving = true);
@@ -107,7 +124,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     final localTrack = _localTrack();
     return Scaffold(
       backgroundColor: const Color(0xFF090912),
-      appBar: AppBar(title: const Text('VibeMingle call'), backgroundColor: Colors.transparent, actions:[IconButton(tooltip:'Report',onPressed:_leaving?null:_report,icon:const Icon(Icons.flag_outlined))]),
+      appBar: AppBar(title: const Text('VibeMingle call'), backgroundColor: Colors.transparent, actions:[IconButton(tooltip:'Report',onPressed:_leaving?null:_report,icon:const Icon(Icons.flag_outlined)),IconButton(tooltip:'Block',onPressed:_leaving?null:_block,icon:const Icon(Icons.block))]),
       body: SafeArea(child: Column(children: [
         Expanded(child: _connecting
           ? const Center(child: CircularProgressIndicator())
