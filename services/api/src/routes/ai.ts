@@ -24,6 +24,9 @@ export async function registerAiRoutes(app:FastifyInstance){
   const {data:quota,error:quotaError}=await admin.rpc("consume_ai_translation_quota",{p_user_id:user.id,p_input_chars:parsed.data.text.length});
   if(quotaError)return reply.code(503).send({error:{code:"AI_QUOTA_UNAVAILABLE",message:"AI usage controls are unavailable."}});
   if(!quota)return reply.code(429).send({error:{code:"AI_DAILY_LIMIT",message:"Daily translation limit reached."}});
+  const {data:globalAllowed,error:globalError}=await admin.rpc("consume_ai_translation_global_limit",{p_daily_limit:env.aiTranslationGlobalDailyRequestLimit});
+  if(globalError)return reply.code(503).send({error:{code:"AI_GLOBAL_LIMIT_UNAVAILABLE",message:"AI global budget controls are unavailable."}});
+  if(!globalAllowed)return reply.code(429).send({error:{code:"AI_GLOBAL_DAILY_LIMIT",message:"AI service daily capacity has been reached. Try tomorrow."}});
   const result=await requestTranslation({apiKey:env.openaiApiKey,model:env.aiTranslationModel,text:parsed.data.text,targetLanguage:parsed.data.targetLanguage});
   if(!result.ok){
    if(result.kind==="timeout")return reply.code(504).send({error:{code:"AI_TIMEOUT",message:"Translation timed out. Please retry."}});
