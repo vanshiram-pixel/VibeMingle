@@ -12,7 +12,7 @@ revoke all on public.ai_translation_daily_quota from anon, authenticated;
 grant all on public.ai_translation_daily_quota to service_role;
 create or replace function public.consume_ai_translation_quota(p_user_id uuid,p_input_chars integer)
 returns boolean language plpgsql security definer set search_path=public as $$
-declare allowed boolean;
+declare affected integer;
 begin
  if p_input_chars is null or p_input_chars < 1 or p_input_chars > 4000 then return false; end if;
  insert into public.ai_translation_daily_quota(user_id,quota_date,requests,input_chars)
@@ -23,8 +23,8 @@ begin
   updated_at=now()
  where public.ai_translation_daily_quota.requests < 30
  and public.ai_translation_daily_quota.input_chars+p_input_chars <= 30000;
- get diagnostics allowed = row_count;
- return allowed;
+ get diagnostics affected = row_count;
+ return affected = 1;
 end; $$;
 revoke all on function public.consume_ai_translation_quota(uuid,integer) from public,anon,authenticated;
 grant execute on function public.consume_ai_translation_quota(uuid,integer) to service_role;
