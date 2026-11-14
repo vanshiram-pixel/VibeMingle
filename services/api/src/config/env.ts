@@ -23,6 +23,9 @@ export const env = {
   // Supabase/provider secrets are intentionally not required for the health-only scaffold.
   supabaseUrl: process.env.SUPABASE_URL,\n  supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  livekitUrl: process.env.LIVEKIT_URL,
+  livekitApiKey: process.env.LIVEKIT_API_KEY,
+  livekitApiSecret: process.env.LIVEKIT_API_SECRET,
 } as const;
 
 export function assertProductionSecrets(): void {
