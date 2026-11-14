@@ -1,3 +1,4 @@
+-- Matching status polling (local migration replay verified iteratively).
 -- Matching status polling without re-enqueueing users or changing queue priority.
 create or replace function public.matching_queue_status(p_user uuid)
 returns table(status text,session_id uuid,partner_id uuid)
