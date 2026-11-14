@@ -13,7 +13,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   final _service = CallService();
   Room? _room;
   EventsListener<RoomEvent>? _listener;
-  bool _connecting = true, _mic = true, _camera = true, _leaving = false;
+  bool _connecting = true, _mic = true, _camera = true, _leaving = false, _reconnecting = false;
   String? _error;
 
   @override
@@ -25,7 +25,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       final room = Room();
       _listener = room.createListener();
       _listener!
-        ..on<ParticipantConnectedEvent>((_) { if (mounted) setState(() {}); })
+        ..on<RoomReconnectingEvent>((_) { if (mounted) setState(() => _reconnecting = true); })\n        ..on<RoomResumingEvent>((_) { if (mounted) setState(() => _reconnecting = true); })\n        ..on<RoomReconnectedEvent>((_) { if (mounted) setState(() => _reconnecting = false); })\n        ..on<ParticipantConnectedEvent>((_) { if (mounted) setState(() {}); })
         ..on<ParticipantDisconnectedEvent>((_) { if (mounted) setState(() {}); })
         ..on<TrackSubscribedEvent>((_) { if (mounted) setState(() {}); })
         ..on<TrackUnsubscribedEvent>((_) { if (mounted) setState(() {}); })
