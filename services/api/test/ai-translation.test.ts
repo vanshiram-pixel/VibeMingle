@@ -117,3 +117,33 @@ test("AI global daily budget is atomic and checked before provider spend",async 
  assert.match(budget,/grant execute on function public\.consume_ai_translation_global_limit\(integer\) to service_role/i);
  assert.match(budget,/enable row level security/i);
 });
+
+
+import { requestTranslation } from "../src/lib/ai-translation-provider.js";
+
+test("translation provider sends bounded instruction-safe request and extracts translation",async()=>{
+ let captured:RequestInit|undefined;
+ const result=await requestTranslation({apiKey:"test-key",model:"test-model",text:"नमस्ते",targetLanguage:"en",fetcher:async(_url,init)=>{captured=init;return new Response(JSON.stringify({output:[{content:[{type:"output_text",text:"Hello"}]}]}),{status:200});}});
+ assert.deepEqual(result,{ok:true,translated:"Hello"});
+ assert.equal((captured?.headers as Record<string,string>).Authorization,"Bearer test-key");
+ const body=JSON.parse(String(captured?.body));
+ assert.equal(body.model,"test-model");assert.equal(body.max_output_tokens,1000);
+ assert.match(body.input[0].content,/strictly as content to translate/);
+ assert.match(body.input[1].content,/नमस्ते/);
+});
+
+test("translation provider sanitizes HTTP errors and rejects malformed or oversized output",async()=>{
+ const http=await requestTranslation({apiKey:"x",model:"m",text:"hi",targetLanguage:"en",fetcher:async()=>new Response("private provider detail",{status:500})});
+ assert.deepEqual(http,{ok:false,kind:"provider"});
+ const invalid=await requestTranslation({apiKey:"x",model:"m",text:"hi",targetLanguage:"en",fetcher:async()=>new Response(JSON.stringify({output:[]} ),{status:200})});
+ assert.deepEqual(invalid,{ok:false,kind:"invalid"});
+ const oversized=await requestTranslation({apiKey:"x",model:"m",text:"hi",targetLanguage:"en",fetcher:async()=>new Response(JSON.stringify({output:[{content:[{type:"output_text",text:"x".repeat(8001)}]}]}),{status:200})});
+ assert.deepEqual(oversized,{ok:false,kind:"invalid"});
+});
+
+test("translation provider aborts timed-out requests",async()=>{
+ const result=await requestTranslation({apiKey:"x",model:"m",text:"hi",targetLanguage:"en",timeoutMs:5,fetcher:(_url,init)=>new Promise((_resolve,reject)=>{
+  init?.signal?.addEventListener("abort",()=>reject(new DOMException("Aborted","AbortError")),{once:true});
+ })});
+ assert.deepEqual(result,{ok:false,kind:"timeout"});
+});
