@@ -116,7 +116,7 @@ class _AiConsentScreenState extends State<AiConsentScreen> {
         title: const Text('Allow AI translation'),
         subtitle: Text(_granted == true ? 'Consent granted' : 'Consent not granted'),
         value: _granted == true,
-        onChanged: _saving ? null : _setConsent,
+        onChanged: _saving || _translating ? null : _setConsent,
       ),
       const SizedBox(height: 12),
       TextField(
