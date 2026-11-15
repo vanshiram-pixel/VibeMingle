@@ -131,6 +131,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
   Timer? _typingTimer;
   bool _peerTyping = false;
   final _picker = ImagePicker();
+  final AudioRecorder _voiceRecorder = AudioRecorder();
+  bool _recordingVoice = false;
   final Map<String, String> _attachmentUrls = {};
 
   @override
