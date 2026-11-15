@@ -146,6 +146,35 @@ class CallRepository {
     return controller.stream;
   }
 
+  /// Realtime status changes for one participant-authorized call session.
+  Stream<CallSession> sessionUpdates(String callId) {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) throw StateError('Sign in before listening for calls');
+    late final RealtimeChannel channel;
+    final controller = StreamController<CallSession>(onCancel: () async {
+      await _db.removeChannel(channel);
+    });
+    channel = _db.channel('call-session-$callId-$uid')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.update,
+        schema: 'public',
+        table: 'call_sessions',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id',
+          value: callId,
+        ),
+        callback: (event) {
+          final row = event.newRecord;
+          if ((row['caller_id'] == uid || row['callee_id'] == uid) &&
+              !controller.isClosed) {
+            controller.add(CallSession.fromJson(Map<String, dynamic>.from(row)));
+          }
+        },
+      ).subscribe();
+    return controller.stream;
+  }
+
   /// Subscribe to server-authorized call events for this user.
   /// Realtime RLS/channel authorization must restrict events to participants.
   Stream<CallStateEvent> eventsForUser() {
