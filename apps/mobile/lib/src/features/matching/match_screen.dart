@@ -59,6 +59,20 @@ class _MatchScreenState extends State<MatchScreen> {
     if (mounted) setState(() => _queued = true);
   }
 
+  Future<void> _acceptMatch() async {
+    final id=_sessionId;
+    if(id==null)throw StateError('No match session');
+    final row=await _repo.acceptSession(sessionId:id);
+    if(mounted)setState(()=>_sessionState=row['state']?.toString()??'connecting');
+  }
+
+  Future<void> _declineMatch() async {
+    final id=_sessionId;
+    if(id==null)throw StateError('No match session');
+    await _repo.declineSession(sessionId:id);
+    if(mounted)setState(()=>_sessionId=null);
+  }
+
   Future<void> _leave() async {
     _heartbeat?.cancel();
     await _repo.leave();
@@ -111,6 +125,11 @@ class _MatchScreenState extends State<MatchScreen> {
             const SizedBox(height: 12),
             Text(_sessionId!=null?'Match session: $_sessionState':_queued ? 'Queue active — searching for a compatible person…' : 'Queue inactive',
                 textAlign: TextAlign.center),
+            if(_sessionId!=null && _sessionState=='reserved') ...[
+              const SizedBox(height: 16),
+              FilledButton.icon(onPressed:_busy?null:()=>_run(_acceptMatch),icon:const Icon(Icons.check_circle),label:const Text('Accept match')),
+              OutlinedButton.icon(onPressed:_busy?null:()=>_run(_declineMatch),icon:const Icon(Icons.close),label:const Text('Decline match')),
+            ],
             const SizedBox(height: 20),
             OutlinedButton(
               onPressed: _busy ? null : () => _run(_revoke),
