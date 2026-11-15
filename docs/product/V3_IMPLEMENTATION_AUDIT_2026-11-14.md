@@ -153,3 +153,5 @@ This is a source/repository audit, not a live production or legal certification.
 - UX refinement: call-request recipient now selected from the safe friend list (display names), not pasted UUID; commit `30fc7cf1`. CI/device validation pending.
 
 - Chat reactions: migration `0026_message_reactions.sql` adds member-only read/self insert-delete RLS; Flutter message bubbles render reaction counts and quick toggle/add-reaction picker (`2ee95a55`). CI and DB smoke pending.
+
+- Read receipts: chat bubbles now show single tick until peer `last_read_at` covers the sent message, then double tick (commit `32b59b07`). UI/CI validation pending.
