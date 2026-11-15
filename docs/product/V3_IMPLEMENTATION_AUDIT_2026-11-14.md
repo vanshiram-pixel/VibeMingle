@@ -136,3 +136,6 @@ This is a source/repository audit, not a live production or legal certification.
 
 
 - Chat UI additions (2026-11-15): emoji picker inserts selected emoji at cursor; message bubbles show local time and edited marker; own messages show sent check. Commits `d2ff904b` and newline normalization `5a49b846`. Earlier conversation sorting patch CI failed due escaped newline literals; corrected. Awaiting CI for current snapshot.
+
+
+- Emoji picker CI fix (2026-11-15): initial picker had a misplaced `.toList()` causing Flutter analyze failure on `5a49b846`; corrected widget mapping with explicit `map<Widget>` in `a7d50a4a`. Current CI must pass before this is marked complete.
