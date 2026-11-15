@@ -45,7 +45,7 @@ class PresenceController {
     _changes ??= StreamController<Map<String, FriendPresence>>.broadcast();
     _channel = _client.channel('presence:${user.id}',
       opts: const RealtimeChannelConfig(
-        presence: {'key': 'user_id'},
+        key: 'user_id',
       ),
     );
     _channel!
@@ -65,7 +65,7 @@ class PresenceController {
   }
 
   void _publish() {
-    final Map<String, List<Presence>> state = _channel?.presenceState() ?? <String, List<Presence>>{};
+    final state = _channel?.presenceState() as Map<String, List<Presence>>? ?? <String, List<Presence>>{};
     final result = <String, FriendPresence>{};
     for (final entries in state.values) {
       for (final entry in entries) {
