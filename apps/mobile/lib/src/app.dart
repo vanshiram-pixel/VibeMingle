@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final _router = GoRouter(
   routes: [
@@ -65,6 +66,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _password = TextEditingController();
   bool _creating = false;
   bool _busy = false;
+  bool get _configured => Supabase.instance.isInitialized;
 
   @override
   void dispose() {
