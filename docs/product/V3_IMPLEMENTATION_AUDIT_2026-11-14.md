@@ -155,3 +155,5 @@ This is a source/repository audit, not a live production or legal certification.
 - Chat reactions: migration `0026_message_reactions.sql` adds member-only read/self insert-delete RLS; Flutter message bubbles render reaction counts and quick toggle/add-reaction picker (`2ee95a55`). CI and DB smoke pending.
 
 - Read receipts: chat bubbles now show single tick until peer `last_read_at` covers the sent message, then double tick (commit `32b59b07`). UI/CI validation pending.
+
+- Chat search: added an in-conversation search field filtering loaded message text locally (`68c8729b`). This searches currently loaded conversation history; CI pending.
