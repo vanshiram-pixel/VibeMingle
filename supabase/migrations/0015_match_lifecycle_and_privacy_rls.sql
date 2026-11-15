@@ -10,7 +10,7 @@ declare v_uid uuid:=auth.uid();
 begin
  if v_uid is null then raise exception 'authentication_required'; end if;
  if p_reason not in ('ended','cancelled','failed','blocked','reported') then raise exception 'invalid_end_reason'; end if;
- update public.match_sessions set state=case when p_reason='failed' then 'failed" else p_reason end,ended_at=clock_timestamp()
+ update public.match_sessions set state=case when p_reason in ('failed','cancelled') then p_reason else 'ended' end,ended_at=clock_timestamp()
  where id=p_session_id and (user_a=v_uid or user_b=v_uid) and state in('reserved','connecting','active');
  return found;
 end $$;
