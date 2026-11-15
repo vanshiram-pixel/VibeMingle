@@ -19,6 +19,12 @@ declare v_a public.match_queue; v_b public.match_queue; v_now timestamptz:=clock
 begin
  if coalesce(auth.role(),'')<>'service_role' then raise exception 'service_role_required'; end if;
  if p_user_a is null or p_user_b is null or p_user_a=p_user_b or p_session_id is null then raise exception 'invalid_pair'; end if;
+ -- Matching requires explicit, current consent and service-verified age eligibility.
+ if not exists(select 1 from public.match_user_consent c where c.user_id=p_user_a and c.enabled=true)
+ or not exists(select 1 from public.match_user_consent c where c.user_id=p_user_b and c.enabled=true)
+ or not exists(select 1 from public.match_eligibility e where e.user_id=p_user_a and e.age_verified=true)
+ or not exists(select 1 from public.match_eligibility e where e.user_id=p_user_b and e.age_verified=true)
+ then return false; end if;
  -- Stable lock order prevents pair reservation deadlocks.
  if p_user_a<p_user_b then
   select * into v_a from public.match_queue where user_id=p_user_a and queue_state='waiting' and heartbeat_at>v_now-interval '30 seconds' for update;
