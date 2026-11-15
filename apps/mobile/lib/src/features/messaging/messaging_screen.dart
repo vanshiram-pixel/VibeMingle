@@ -139,6 +139,23 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
+  Future<void> _showEmojiPicker() async {
+    const emojis = ['😀','😂','🥰','😍','😊','👍','❤️','🔥','🎉','🙏','😎','🤔','😭','🤣','🙌','💯'];
+    final emoji = await showModalBottomSheet<String>(context: context,
+      builder: (ctx) => SafeArea(child: Padding(padding: const EdgeInsets.all(12),
+        child: Wrap(spacing: 8, runSpacing: 8, children: emojis.map((e) =>
+          InkWell(onTap: () => Navigator.pop(ctx, e),
+            child: Padding(padding: const EdgeInsets.all(8), child: Text(e, style: const TextStyle(fontSize: 28))))
+          .toList()))));
+    if (emoji == null) return;
+    final text = _input.text;
+    final selection = _input.selection;
+    final start = selection.isValid ? selection.start : text.length;
+    final end = selection.isValid ? selection.end : text.length;
+    _input.value = TextEditingValue(text: text.replaceRange(start, end, emoji),
+      selection: TextSelection.collapsed(offset: start + emoji.length));
+  }
+
   Future<void> _send() async {
     final body = _input.text.trim();
     if (body.isEmpty || _sending) return;
@@ -272,8 +289,20 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       color: mine ? Theme.of(context).colorScheme.primaryContainer :
                         Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(16)),
-                    child: Text(message['deleted_at'] != null ? 'Message deleted' :
-                      message['body'].toString()),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min, children: [
+                        Text(message['deleted_at'] != null ? 'Message deleted' :
+                          message['body'].toString()),
+                        const SizedBox(height: 3),
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          if (message['edited_at'] != null && message['deleted_at'] == null)
+                            const Text('edited · ', style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic)),
+                          Text(DateTime.tryParse(message['created_at'].toString())?.toLocal().toString().substring(11, 16) ?? '',
+                            style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                          if (mine) const Padding(padding: EdgeInsets.only(left: 4),
+                            child: Icon(Icons.done, size: 13)),
+                        ]),
+                      ]),
                   ),
                 ),
               );
@@ -281,8 +310,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
           )),
         SafeArea(child: Padding(padding: const EdgeInsets.all(8),
           child: Row(children: [
+            IconButton(onPressed: _showEmojiPicker, tooltip: 'Emoji',
+              icon: const Icon(Icons.emoji_emotions_outlined)),
             Expanded(child: TextField(controller: _input, minLines: 1, maxLines: 4,
-              decoration: const InputDecoration(hintText: 'Write a message…',
+              decoration: const InputDecoration(hintText: 'Message',
                 border: OutlineInputBorder()))),
             IconButton(onPressed: _sending ? null : _send,
               icon: _sending ? const CircularProgressIndicator() : const Icon(Icons.send)),
