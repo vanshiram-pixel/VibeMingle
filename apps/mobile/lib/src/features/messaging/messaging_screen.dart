@@ -554,7 +554,7 @@ class _ChatAudioPlayer extends StatefulWidget {
   @override State<_ChatAudioPlayer> createState() => _ChatAudioPlayerState();
 }
 class _ChatAudioPlayerState extends State<_ChatAudioPlayer> {
-  final AudioPlayer _player = AudioPlayer(); bool _playing = false;
+  final AudioPlayer _player = AudioPlayer();
   @override void dispose() { _player.dispose(); super.dispose(); }
-  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(widget.title)), body: Center(child: StreamBuilder<PlayerState>(stream: _player.onPlayerStateChanged, builder: (context, snapshot) { final playing = snapshot.data == PlayerState.playing; return IconButton(iconSize: 72, icon: Icon(playing ? Icons.pause_circle : Icons.play_circle), onPressed: () async { if (playing) await _player.pause(); else await _player.play(UrlSource(widget.url)); setState(() => _playing = !playing); }); })));
+  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(widget.title)), body: Center(child: StreamBuilder<PlayerState>(stream: _player.onPlayerStateChanged, builder: (context, snapshot) { final playing = snapshot.data == PlayerState.playing; return IconButton(iconSize: 72, icon: Icon(playing ? Icons.pause_circle : Icons.play_circle), onPressed: () async { if (playing) { await _player.pause(); } else { await _player.play(UrlSource(widget.url)); } }); })));
 }
