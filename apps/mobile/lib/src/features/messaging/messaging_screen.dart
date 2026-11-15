@@ -139,7 +139,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   Future<void> _load() async {
     try {
       final rows = await _db.from('messages')
-        .select('id,sender_id,body,created_at,edited_at,deleted_at,reply_to_message:messages!reply_to_message(id,body,sender_id),message_reactions(user_id,emoji)')
+        .select('id,sender_id,body,created_at,edited_at,deleted_at,reply_to_message:messages!messages_reply_to_message_fkey(id,body,sender_id),message_reactions(user_id,emoji)')
         .eq('conversation_id', widget.conversationId).order('created_at');
       final uid = _db.auth.currentUser!.id;
       final member = await _db.from('conversation_members').select('user_id,last_read_at')
