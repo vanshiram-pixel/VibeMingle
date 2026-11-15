@@ -3,13 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'features/friends/friends_screen.dart';
 import 'features/messaging/messaging_screen.dart';
+import 'features/messaging/chat_thread_screen.dart';
 
 final _router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
     GoRoute(path: '/friends', builder: (context, state) => const FriendsScreen()),
-    GoRoute(path: '/messages', builder: (context, state) => const MessagingScreen()),
+    GoRoute(path: '/messages', builder: (context, state) => const ChatInboxScreen()),
   ],
 );
 
