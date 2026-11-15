@@ -149,3 +149,5 @@ This is a source/repository audit, not a live production or legal certification.
 - CI correction: removed unused RPC result local from `call_requests_screen.dart` (`f1b6f109`). Earlier V3 analyzer runs failed solely on that warning; rerun V3 analyzer after correction.
 
 - Safety tightening: `call_request_create` now requires an accepted friendship in addition to block/age checks; non-friends cannot initiate private calls (commit `4b98c46e`).
+
+- UX refinement: call-request recipient now selected from the safe friend list (display names), not pasted UUID; commit `30fc7cf1`. CI/device validation pending.
