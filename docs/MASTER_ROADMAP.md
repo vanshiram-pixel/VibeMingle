@@ -168,3 +168,11 @@ Screen-by-screen user journeys, every page/button/popup behavior, V1/V2/V3 scope
 
 ## V1–V4 Reconciliation Audit
 - [V1–V4 Reconciliation & Repository Evidence Audit](./V1_V2_V3_V4_RECONCILIATION_AND_REPOSITORY_AUDIT.md) records scope preservation, screen/page action crosswalk and evidence-based repository status. No final scope seal is claimed until detailed traceability and user approval.
+
+
+## V4.2 Advanced Add-ons (2026-11-15)
+- Add-on specification: [V4 Advanced Add-ons — Translation, Chat & Security](./V4_ADVANCED_ADDONS_TRANSLATION_CHAT_SECURITY.md).
+- Includes advanced manual matching filters + preview; 15-second Next lock with immediate safety exits; live voice translation/captions/audio across stranger/private audio/video calls and all entry points; advanced E2EE chat; privacy-preserving AI safety and case-scoped evidence; IP/device risk monitoring with access controls; Admin service toggles (default ON where supported), emergency stop, hide, rollout, restore, and health monitoring.
+- Owner instruction: sexual exploitation/grooming indicators are excluded from general AI monitoring categories. Other specified safety protections remain.
+- E2EE constraint: no universal Admin decryption key, covert surveillance, or blanket chat ZIP backup. Export only scoped, user-reported/authorized case evidence with audit, encryption, and retention.
+- These are specified add-ons, not implemented/verified functionality. Update all screen/API/event/database contracts and tests during implementation.
