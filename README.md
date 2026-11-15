@@ -19,3 +19,5 @@ Work on feature branches and keep production deployment/store launch behind expl
 - [V4 Complete Product Review & Launch Lock](docs/V4_COMPLETE_PRODUCT_REVIEW_AND_LAUNCH_LOCK.md) — screen-by-screen, action-by-action, web/admin/backend and launch sequence.
 
 - [V4 25-Phase Development & Launch Master Plan](docs/V4_25_PHASE_FINAL_DEVELOPMENT_MASTER_PLAN.md) — complete phase order, services, deliverables and exit criteria.
+
+- [V1–V4 Reconciliation & Repository Evidence Audit](docs/V1_V2_V3_V4_RECONCILIATION_AND_REPOSITORY_AUDIT.md) — preserved version scope and honest code/spec/verification inventory.
