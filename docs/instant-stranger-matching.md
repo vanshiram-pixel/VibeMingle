@@ -84,3 +84,7 @@ Auth + age/consent + profile + presence + block/report → atomic queue/match RP
 
 ## Match-to-friend transition (locked)
 For Add Friend/Follow/Post-Match and private-call eligibility after a match, follow [STRANGER_MATCH_FRIEND_FLOW.md](STRANGER_MATCH_FRIEND_FLOW.md): request → recipient Accept → friendship; Follow independent; same conversation reused; private call requires a new request and receiver Accept; no former-match direct call/rejoin; Block overrides all paths. Specification only; implementation/runtime verification pending.
+
+
+## V4 alignment — Manual Search & unified engine
+V4 confirms three entry modes over one server-authoritative matching engine: Instant Random, Next/Random Switch, and Manual Stranger Search (adult age range, gender preference, language and supported filters). Manual filters must be honored; no silent broadening/fallback. All modes share block/eligibility/queue/session rules. See [V4_FINAL_HARD_LOCKS.md](./V4_FINAL_HARD_LOCKS.md).
