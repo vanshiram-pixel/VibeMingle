@@ -89,6 +89,14 @@ class _MatchScreenState extends State<MatchScreen> {
   Future<void> _revoke() async {
     _heartbeat?.cancel();
     if (_queued) await _repo.leave();
+    final activeSession = _sessionId;
+    if (activeSession != null) {
+      try {
+        await _repo.declineSession(sessionId: activeSession);
+      } catch (_) {
+        // Consent revocation must still complete if the session already ended.
+      }
+    }
     await _events?.cancel();
     _events = null;
     await _repo.setConsent(enabled: false, version: 'v4.1-consent-1');
@@ -96,6 +104,7 @@ class _MatchScreenState extends State<MatchScreen> {
       _queued = false;
       _sessionId = null;
       _sessionState = 'waiting';
+      _consent = false;
     });
   }
 
