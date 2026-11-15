@@ -120,6 +120,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   bool _loading = true, _sending = false;
   DateTime? _peerReadAt;
   bool _searchOpen = false;
+  Map<String, dynamic>? _replyTo;
   final _search = TextEditingController();
   RealtimeChannel? _channel;
 
@@ -227,8 +228,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
     setState(() => _sending = true);
     try {
       await _db.rpc('message_send', params: {
-        'p_conversation': widget.conversationId, 'p_body': body});
+        'p_conversation': widget.conversationId, 'p_body': body, 'p_reply_to': _replyTo?['id']});
       _input.clear();
+      if (mounted) setState(() => _replyTo = null);
       await _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -261,14 +263,24 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Future<void> _messageActions(Map<String, dynamic> message, bool mine) async {
     final id = message['id'].toString();
-    if (!mine) { await _report(id); return; }
+    if (!mine) {
+      final choice = await showModalBottomSheet<String>(context: context, builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(leading: const Icon(Icons.reply), title: const Text('Reply'), onTap: () => Navigator.pop(ctx, 'reply')),
+        ListTile(leading: const Icon(Icons.flag), title: const Text('Report'), onTap: () => Navigator.pop(ctx, 'report')),
+      ])));
+      if (choice == 'reply' && mounted) setState(() => _replyTo = message);
+      if (choice == 'report') await _report(id);
+      return;
+    }
     final action = await showModalBottomSheet<String>(context: context, builder: (ctx) =>
       SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(leading: const Icon(Icons.reply), title: const Text('Reply'), onTap: () => Navigator.pop(ctx, 'reply')),
         ListTile(leading: const Icon(Icons.edit), title: const Text('Edit message'),
           onTap: () => Navigator.pop(ctx, 'edit')),
         ListTile(leading: const Icon(Icons.delete_outline), title: const Text('Delete message'),
           onTap: () => Navigator.pop(ctx, 'delete')),
       ])));
+    if (action == 'reply' && mounted) setState(() => _replyTo = message);
     if (action == 'edit') await _edit(id, message['body'].toString());
     if (action == 'delete') await _delete(id);
   }
@@ -338,7 +350,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       body: Column(children: [
         Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) :
           ListView.builder(
-            padding: const EdgeInsets.all(12), itemCount: _messages.length,
+            padding: const EdgeInsets.all(12), itemCount: _messages.where((m) => _search.text.trim().isEmpty || m['body'].toString().toLowerCase().contains(_search.text.trim().toLowerCase())).length,
             itemBuilder: (context, index) {
               final visible = _messages.where((m) => _search.text.trim().isEmpty || m['body'].toString().toLowerCase().contains(_search.text.trim().toLowerCase())).toList();
               final message = visible[index];
@@ -358,6 +370,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       borderRadius: BorderRadius.circular(16)),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min, children: [
+                        if (message['reply_to_message'] is Map) Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withValues(alpha: .35), borderRadius: BorderRadius.circular(8)), child: Text('↪ ${(message['reply_to_message'] as Map)['body'] ?? 'Reply', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                         Text(message['deleted_at'] != null ? 'Message deleted' :
                           message['body'].toString()),
                         if (message['deleted_at'] == null) ...[
@@ -395,6 +408,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
               );
             },
           )),
+        if (_replyTo != null) ListTile(dense: true, leading: const Icon(Icons.reply), title: Text('Replying: ${_replyTo!['body']}', maxLines: 1, overflow: TextOverflow.ellipsis), trailing: IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _replyTo = null))),
         SafeArea(child: Padding(padding: const EdgeInsets.all(8),
           child: Row(children: [
             IconButton(onPressed: _showEmojiPicker, tooltip: 'Emoji',
