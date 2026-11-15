@@ -256,7 +256,7 @@ class _IncomingCallListenerState extends State<IncomingCallListener> {
           await controller.close();
           return;
         }
-        navigator.push(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
+        navigator.pushReplacement(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
           session: session, peerName: callerName, controller: controller,
           signaling: signaling,
           onEnd: () => _calls.end(session.id),
