@@ -178,19 +178,19 @@ class _ConversationScreenState extends State<ConversationScreen> {
       'scam': 'Scam',
       'other': 'Other',
     };
-    final category = await showDialog<String>(
+    final category = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Report this message?'),
-        content: const Text('यह संदेश moderation team को report होगा।'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel')),
-          ...categories.entries.map((entry) => TextButton(
-            onPressed: () => Navigator.pop(ctx, entry.key),
-            child: Text(entry.value))),
-        ],
-      ),
+      builder: (ctx) => SafeArea(child: ListView(
+        shrinkWrap: true,
+        children: [
+          const ListTile(title: Text('Report message'),
+            subtitle: Text('कारण चुनें')),
+          ...categories.entries.map((entry) => ListTile(
+            leading: const Icon(Icons.flag_outlined),
+            title: Text(entry.value),
+            onTap: () => Navigator.pop(ctx, entry.key))),
+        const SizedBox(height: 12),
+      )),
     );
     if (category == null) return;
     try {
