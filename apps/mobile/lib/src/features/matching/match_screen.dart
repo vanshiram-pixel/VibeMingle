@@ -9,7 +9,7 @@ class MatchScreen extends StatefulWidget {
 class _MatchScreenState extends State<MatchScreen>{
  final _repo=MatchQueueRepository();
  bool _consent=false,_queued=false,_busy=false;
- String _mode='random',_status='Not connected';
+ String _mode='random';
  Timer? _heartbeat;
  @override void dispose(){_heartbeat?.cancel();super.dispose();}
  Future<void> _run(Future<void> Function() action)async{
