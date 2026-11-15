@@ -164,3 +164,7 @@ Screen-by-screen user journeys, every page/button/popup behavior, V1/V2/V3 scope
 ## V4 25-Phase Execution Lock
 - [V4 25-Phase Final Development Master Plan](./V4_25_PHASE_FINAL_DEVELOPMENT_MASTER_PLAN.md) is the authoritative phase order, scope and exit criteria.
 - Execution begins at P01 repository audit; phase completion requires code + integration + tests + evidence, never docs/UI alone.
+
+
+## V1–V4 Reconciliation Audit
+- [V1–V4 Reconciliation & Repository Evidence Audit](./V1_V2_V3_V4_RECONCILIATION_AND_REPOSITORY_AUDIT.md) records scope preservation, screen/page action crosswalk and evidence-based repository status. No final scope seal is claimed until detailed traceability and user approval.
