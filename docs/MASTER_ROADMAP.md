@@ -134,3 +134,13 @@ Each feature: design/schema → implementation → integration → unit/widget/S
 
 ## Canonical detailed product blueprint
 Screen-by-screen user journeys, every page/button/popup behavior, V1/V2/V3 scope, Admin/Ops screens, backend wiring, event/state contracts, safety, testing and launch gates are consolidated in [FINAL_MASTER_PRODUCT_BLUEPRINT.md](./FINAL_MASTER_PRODUCT_BLUEPRINT.md). This is the detailed product contract; this roadmap remains the execution/status tracker. Matching/video/chat/translation decisions are also in [instant-stranger-matching.md](./instant-stranger-matching.md).
+
+
+## Locked social flow contract (2026-11-15)
+- Stranger Match → Add Friend → pending request → recipient Accept → mutual Friends.
+- Follow is independent; never grants friendship, chat, or private-call permission.
+- Match conversation remains canonical after friendship; no duplicate thread.
+- After friendship, private call requires Call Request + recipient Accept + privacy/availability/block checks.
+- Former match without friendship cannot direct-call or reconnect to old session.
+- Block overrides all social, message, match, and call paths.
+- Detailed permanent contract: [STRANGER_MATCH_FRIEND_FLOW.md](STRANGER_MATCH_FRIEND_FLOW.md). This is a locked specification, not evidence of implementation.
