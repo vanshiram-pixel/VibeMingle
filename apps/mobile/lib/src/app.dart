@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -246,7 +248,7 @@ class _IncomingCallListenerState extends State<IncomingCallListener> {
           await controller.close();
           return;
         }
-        navigator.pushReplacement(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
+        navigator.push(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
           session: session, peerName: 'VibeMingle user', controller: controller,
           signaling: signaling,
           onEnd: () => _calls.end(session.id),
