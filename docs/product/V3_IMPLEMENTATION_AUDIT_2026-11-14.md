@@ -147,3 +147,5 @@ This is a source/repository audit, not a live production or legal certification.
 - Commits: migration `8eaae870`, screen `35e19b82`, Home entry `c52903a2`. Verify migration replay, Flutter analyzer, API/V3 CI and device behavior. Notifications/push and friend-only request policy still need integration; recipient can currently be any eligible profile UUID.
 
 - CI correction: removed unused RPC result local from `call_requests_screen.dart` (`f1b6f109`). Earlier V3 analyzer runs failed solely on that warning; rerun V3 analyzer after correction.
+
+- Safety tightening: `call_request_create` now requires an accepted friendship in addition to block/age checks; non-friends cannot initiate private calls (commit `4b98c46e`).
