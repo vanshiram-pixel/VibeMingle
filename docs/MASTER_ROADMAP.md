@@ -159,3 +159,8 @@ Screen-by-screen user journeys, every page/button/popup behavior, V1/V2/V3 scope
 - Full screen/page/control/logic/admin/backend and launch sequence review: [V4_COMPLETE_PRODUCT_REVIEW_AND_LAUNCH_LOCK.md](./V4_COMPLETE_PRODUCT_REVIEW_AND_LAUNCH_LOCK.md).
 - Launch focus is P0 Core vertical slices; V2/V3 features remain preserved but must not distract from Core implementation, integration, testing and launch readiness.
 - No dead/fake buttons, fake match/call/payment/translation; evidence-based status; deployment/store/public launch only after user approval.
+
+
+## V4 25-Phase Execution Lock
+- [V4 25-Phase Final Development Master Plan](./V4_25_PHASE_FINAL_DEVELOPMENT_MASTER_PLAN.md) is the authoritative phase order, scope and exit criteria.
+- Execution begins at P01 repository audit; phase completion requires code + integration + tests + evidence, never docs/UI alone.
