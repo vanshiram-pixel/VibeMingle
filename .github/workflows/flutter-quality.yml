@@ -41,6 +41,22 @@ jobs:
           p.write_text(s)
           print(f'Configured compileSdk 36 in {p}')
           PY
+      - name: Align flutter_webrtc plugin compile SDK
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          root = Path(os.environ['HOME']) / '.pub-cache' / 'hosted'
+          matches = list(root.glob('*/flutter_webrtc-*/android/build.gradle'))
+          if not matches:
+              raise SystemExit('flutter_webrtc Android Gradle file not found in pub cache')
+          p = matches[-1]
+          s = p.read_text()
+          s = s.replace('compileSdkVersion 31', 'compileSdkVersion 36')
+          s = s.replace('compileSdk = 31', 'compileSdk = 36')
+          p.write_text(s)
+          print(f'Configured plugin compile SDK 36 in {p}')
+          PY
       - name: Build release APK
         run: flutter build apk --release --android-skip-build-dependency-validation
       - uses: actions/upload-artifact@v4
