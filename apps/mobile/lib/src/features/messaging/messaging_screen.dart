@@ -163,7 +163,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
         _attachmentUrls.clear();
         _peerReadAt = DateTime.tryParse(member?['last_read_at']?.toString() ?? '');
       });
-      for (final row in rows) {\n        final attachments = List<Map<String, dynamic>>.from(row['message_attachments'] ?? []);\n        for (final a in attachments) {\n          try { _attachmentUrls[a['id'].toString()] = await _db.storage.from('chat-media').createSignedUrl(a['storage_path'].toString(), 3600); } catch (_) {}\n        }\n      }\n      if (mounted) setState(() {});\n      await _db.rpc('conversation_mark_read', params: {'p_conversation': widget.conversationId});
+      for (final row in rows) {
+        final attachments = List<Map<String, dynamic>>.from(row['message_attachments'] ?? []);
+        for (final a in attachments) {
+          try { _attachmentUrls[a['id'].toString()] = await _db.storage.from('chat-media').createSignedUrl(a['storage_path'].toString(), 3600); } catch (_) {}
+        }
+      }
+      if (mounted) setState(() {});
+      await _db.rpc('conversation_mark_read', params: {'p_conversation': widget.conversationId});
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Messages load error: $e')));
@@ -237,7 +244,28 @@ class _ConversationScreenState extends State<ConversationScreen> {
     );
   }
 
-  Future<void> _pickAndSendMedia(bool video) async {\n    if (_sending) return;\n    final picked = video ? await _picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 2)) : await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);\n    if (picked == null) return;\n    final file = File(picked.path);\n    final size = await file.length();\n    if (size > 25 * 1024 * 1024) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File 25 MB से छोटा होना चाहिए'))); return; }\n    setState(() => _sending = true);\n    try {\n      final uid = _db.auth.currentUser!.id;\n      final mime = video ? (picked.mimeType ?? 'video/mp4') : (picked.mimeType ?? 'image/jpeg');\n      final safeName = picked.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');\n      final path = '${widget.conversationId}/$uid/${DateTime.now().millisecondsSinceEpoch}_$safeName';\n      await _db.storage.from('chat-media').upload(path, file, fileOptions: FileOptions(contentType: mime, upsert: false));\n      final message = await _db.rpc('message_send', params: {'p_conversation': widget.conversationId, 'p_body': video ? '🎥 Video' : '📷 Photo'});\n      await _db.from('message_attachments').insert({'message_id': message['id'], 'conversation_id': widget.conversationId, 'uploader_id': uid, 'storage_path': path, 'file_name': picked.name, 'mime_type': mime, 'byte_size': size, 'media_kind': video ? 'video' : 'image'});\n      await _load();\n    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Media upload नहीं हुआ: $e'))); }\n    finally { if (mounted) setState(() => _sending = false); }\n  }\n\n  void _broadcastTyping(String text) {
+  Future<void> _pickAndSendMedia(bool video) async {
+    if (_sending) return;
+    final picked = video ? await _picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 2)) : await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null) return;
+    final file = File(picked.path);
+    final size = await file.length();
+    if (size > 25 * 1024 * 1024) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File 25 MB से छोटा होना चाहिए'))); return; }
+    setState(() => _sending = true);
+    try {
+      final uid = _db.auth.currentUser!.id;
+      final mime = video ? (picked.mimeType ?? 'video/mp4') : (picked.mimeType ?? 'image/jpeg');
+      final safeName = picked.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+      final path = '${widget.conversationId}/$uid/${DateTime.now().millisecondsSinceEpoch}_$safeName';
+      await _db.storage.from('chat-media').upload(path, file, fileOptions: FileOptions(contentType: mime, upsert: false));
+      final message = await _db.rpc('message_send', params: {'p_conversation': widget.conversationId, 'p_body': video ? '🎥 Video' : '📷 Photo'});
+      await _db.from('message_attachments').insert({'message_id': message['id'], 'conversation_id': widget.conversationId, 'uploader_id': uid, 'storage_path': path, 'file_name': picked.name, 'mime_type': mime, 'byte_size': size, 'media_kind': video ? 'video' : 'image'});
+      await _load();
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Media upload नहीं हुआ: $e'))); }
+    finally { if (mounted) setState(() => _sending = false); }
+  }
+
+  void _broadcastTyping(String text) {
     final channel = _typingChannel;
     if (channel == null) return;
     final uid = _db.auth.currentUser?.id;
@@ -414,7 +442,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                             maxLines: 2, overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 12)),
                         ),
-                        if (message['message_attachments'] is List && (message['message_attachments'] as List).isNotEmpty) ...((message['message_attachments'] as List).map((raw) { final a = Map<String,dynamic>.from(raw as Map); final url = _attachmentUrls[a['id'].toString()]; return Padding(padding: const EdgeInsets.only(bottom: 5), child: url == null ? const Text('Attachment loading…') : a['media_kind']=='image' ? Image.network(url, width: 220, fit: BoxFit.cover) : InkWell(onTap: () {}, child: Row(children: [const Icon(Icons.play_circle), Flexible(child: Text(a['file_name'].toString()))]))); })),\n                        Text(message['deleted_at'] != null ? 'Message deleted' :
+                        if (message['message_attachments'] is List && (message['message_attachments'] as List).isNotEmpty) ...((message['message_attachments'] as List).map((raw) { final a = Map<String,dynamic>.from(raw as Map); final url = _attachmentUrls[a['id'].toString()]; return Padding(padding: const EdgeInsets.only(bottom: 5), child: url == null ? const Text('Attachment loading…') : a['media_kind']=='image' ? Image.network(url, width: 220, fit: BoxFit.cover) : InkWell(onTap: () {}, child: Row(children: [const Icon(Icons.play_circle), Flexible(child: Text(a['file_name'].toString()))]))); })),
+                        Text(message['deleted_at'] != null ? 'Message deleted' :
                           message['body'].toString()),
                         if (message['deleted_at'] == null) ...[
                           const SizedBox(height: 5),
@@ -455,7 +484,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
         if (_peerTyping) const Padding(padding: EdgeInsets.only(left: 16, bottom: 4), child: Text('Friend is typing…', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic))),
         SafeArea(child: Padding(padding: const EdgeInsets.all(8),
           child: Row(children: [
-            IconButton(onPressed: () => _pickAndSendMedia(false), tooltip: 'Photo', icon: const Icon(Icons.image)),\n            IconButton(onPressed: () => _pickAndSendMedia(true), tooltip: 'Video', icon: const Icon(Icons.video_library)),\n            IconButton(onPressed: _showEmojiPicker, tooltip: 'Emoji',
+            IconButton(onPressed: () => _pickAndSendMedia(false), tooltip: 'Photo', icon: const Icon(Icons.image)),
+            IconButton(onPressed: () => _pickAndSendMedia(true), tooltip: 'Video', icon: const Icon(Icons.video_library)),
+            IconButton(onPressed: _showEmojiPicker, tooltip: 'Emoji',
               icon: const Icon(Icons.emoji_emotions_outlined)),
             Expanded(child: TextField(controller: _input, onChanged: _broadcastTyping, minLines: 1, maxLines: 4,
               decoration: const InputDecoration(hintText: 'Message',
