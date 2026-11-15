@@ -176,3 +176,8 @@ Screen-by-screen user journeys, every page/button/popup behavior, V1/V2/V3 scope
 - Owner instruction: sexual exploitation/grooming indicators are excluded from general AI monitoring categories. Other specified safety protections remain.
 - E2EE constraint: no universal Admin decryption key, covert surveillance, or blanket chat ZIP backup. Export only scoped, user-reported/authorized case evidence with audit, encryption, and retention.
 - These are specified add-ons, not implemented/verified functionality. Update all screen/API/event/database contracts and tests during implementation.
+
+
+## V4 Final Updated Screen-by-Screen Blueprint
+- [Final Updated Screen-by-Screen & Button Blueprint](./V4_FINAL_UPDATED_SCREEN_BY_SCREEN_BUTTON_BLUEPRINT.md) consolidates Android S00–S20, Website/PWA W00–W14, Admin A00–A18, navigation, every primary control, frontend/backend/realtime wiring, security, errors, and red-team acceptance criteria.
+- This is the reviewable specification, not implementation evidence; use implementation/test status labels honestly.
