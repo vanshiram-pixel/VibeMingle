@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'features/friends/friends_screen.dart';
-import 'features/messaging/messaging_screen.dart';
 import 'features/messaging/chat_thread_screen.dart';
 import 'features/matching/match_screen.dart';
 
