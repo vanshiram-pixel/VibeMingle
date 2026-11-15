@@ -117,7 +117,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final _db = Supabase.instance.client;
   final _input = TextEditingController();
   List<Map<String, dynamic>> _messages = [];
-  bool _loading = true, _sending = false;\n  DateTime? _peerReadAt;
+  bool _loading = true, _sending = false;\n  DateTime? _peerReadAt;\n  bool _searchOpen = false;\n  final _search = TextEditingController();
   RealtimeChannel? _channel;
 
   @override
@@ -312,7 +312,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   @override
   void dispose() {
-    _input.dispose();
+    _input.dispose();\n    _search.dispose();
     if (_channel != null) _db.removeChannel(_channel!);
     super.dispose();
   }
@@ -321,13 +321,13 @@ class _ConversationScreenState extends State<ConversationScreen> {
   Widget build(BuildContext context) {
     final uid = _db.auth.currentUser!.id;
     return Scaffold(
-      appBar: AppBar(title: const Text('Private chat')),
+      appBar: AppBar(title: _searchOpen ? TextField(controller: _search, autofocus: true, decoration: const InputDecoration(hintText: 'Search messages', border: InputBorder.none), onChanged: (_) => setState(() {})) : const Text('Private chat'), actions: [IconButton(icon: Icon(_searchOpen ? Icons.close : Icons.search), onPressed: () => setState(() { _searchOpen = !_searchOpen; if (!_searchOpen) _search.clear(); }), tooltip: 'Search messages')]),
       body: Column(children: [
         Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) :
           ListView.builder(
             padding: const EdgeInsets.all(12), itemCount: _messages.length,
             itemBuilder: (context, index) {
-              final message = _messages[index];
+              final visible = _messages.where((m) => _search.text.trim().isEmpty || m['body'].toString().toLowerCase().contains(_search.text.trim().toLowerCase())).toList();\n              final message = visible[index];
               final mine = message['sender_id'] == uid;
               return Align(
                 alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
