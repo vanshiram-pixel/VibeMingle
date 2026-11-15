@@ -11,12 +11,14 @@ class CallSignalingCoordinator {
     required this.controller,
     required this.callId,
     required this.remoteUserId,
+    this.onRemoteHangup,
   });
 
   final CallRepository repository;
   final WebRtcCallController controller;
   final String callId;
   final String remoteUserId;
+  final Future<void> Function()? onRemoteHangup;
   StreamSubscription<Map<String, dynamic>>? _subscription;
   bool _closed = false;
 
@@ -72,6 +74,7 @@ class CallSignalingCoordinator {
           break;
         case 'hangup':
           await close();
+          await onRemoteHangup?.call();
           break;
         default:
           break;
