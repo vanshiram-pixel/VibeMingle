@@ -29,7 +29,7 @@ Status means evidence in the current GitHub branch. A migration/file/scaffold is
 4. Age gate, consent, privacy controls, account safety baseline
 5. Friend requests/accept/reject/remove/block; discovery/search
 6. Presence/online state and privacy-aware visibility
-7. **Instant Stranger Video Matching (V1):** one-tap auto-pairing and automatic video-call activation, target <1 second when a compatible peer is already waiting; mandatory 15-second initial interaction window (Next disabled, safety exit always available); Next Stranger rematch; queue/retry window up to 60–70 seconds before no-match/retry state
+7. **Instant Stranger Video Matching (V1):** one-tap atomic auto-pairing + automatic call activation (<1s target with waiting peer); 15-second Next lock with immediate safety exits; Next rematch target 1–2s when a peer waits; open-ended visible search + cancel when pool is empty; video-first UI with chat beneath video/bottom sheet, session-integrated controls and translation-ready captions
 8. 1:1 private chat: send/receive/realtime, history, pagination, typing, delivered/read, edit/delete, image sharing, block/report
 9. Audio/video calling: request/ringing/accept/decline/missed/busy/end, signaling, WebRTC, TURN, permissions, controls, reconnect, call history
 10. Push notifications (FCM/APNs/web as applicable), in-app inbox/preferences
@@ -50,7 +50,7 @@ V1 acceptance: a real pair of test users can Google sign in, set profiles, frien
 - Quality, reliability and performance improvements
 
 ## V3 / Global scale & ecosystem
-- Global personalization and recommendation intelligence
+- Global personalization and recommendation intelligence\n- Global language routing and scalable real-time translation/media orchestration
 - Multi-region/scalable media and backend architecture
 - Creator economy/gifts/monetization expansion
 - Localization, global policy/compliance and market-specific controls
@@ -102,7 +102,7 @@ Overall integrated launch readiness: roughly 10–15%, not a weighted average an
 - Keep PR #1 draft until Flutter analyze/build, SQL validation, RLS tests and two-user integration pass.
 - Add a phase checklist, acceptance criteria, blockers, test evidence and status to every phase.
 - No "done" label for scaffold/schema-only; use NOT STARTED / IN PROGRESS / IMPLEMENTED / INTEGRATED / VERIFIED / RELEASED.
-- Instant stranger matching spec: docs/instant-stranger-matching.md. Keep 1-second pairing as a measured target—not a guarantee; the 60–70-second queue window is a retry/no-match UX, not a promise that every user gets a stranger.
+- Instant stranger matching + integrated video/chat/translation contract: docs/instant-stranger-matching.md. Pairing <1s and Next 1–2s are measured targets only when a compatible peer is waiting; empty queue stays searching with Cancel (no fixed 60–70s timeout). 15s Next lock never blocks safety exit.
 - No production deployment, store release or launch without user notification and approval.
 
 ## Next execution (ordered)
