@@ -156,6 +156,41 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
+  Future<void> _edit(String id, String current) async {
+    final ctrl = TextEditingController(text: current);
+    final edited = await showDialog<String>(context: context, builder: (ctx) =>
+      AlertDialog(title: const Text('Edit message'), content: TextField(
+        controller: ctrl, autofocus: true, maxLines: 4, maxLength: 4000),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Save')),
+        ]));
+    ctrl.dispose();
+    if (edited == null || edited.isEmpty || edited == current) return;
+    try {
+      await _db.rpc('message_edit', params: {'p_message': id, 'p_body': edited});
+      await _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Edit failed: $e')));
+    }
+  }
+
+  Future<void> _messageActions(Map<String, dynamic> message, bool mine) async {
+    final id = message['id'].toString();
+    if (!mine) { await _report(id); return; }
+    final action = await showModalBottomSheet<String>(context: context, builder: (ctx) =>
+      SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(leading: const Icon(Icons.edit), title: const Text('Edit message'),
+          onTap: () => Navigator.pop(ctx, 'edit')),
+        ListTile(leading: const Icon(Icons.delete_outline), title: const Text('Delete message'),
+          onTap: () => Navigator.pop(ctx, 'delete')),
+      ])));
+    if (action == 'edit') await _edit(id, message['body'].toString());
+    if (action == 'delete') await _delete(id);
+  }
+
   Future<void> _delete(String id) async {
     try {
       await _db.rpc('message_delete', params: {'p_message': id});
@@ -228,8 +263,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
                 child: GestureDetector(
                   onLongPress: message['deleted_at'] != null ? null :
-                    () => mine ? _delete(message['id'].toString()) :
-                      _report(message['id'].toString()),
+                    () => _messageActions(message, mine),
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 5),
                     padding: const EdgeInsets.all(12),
