@@ -54,8 +54,8 @@ class ChatRepository {
     required String currentUserId,
   }) {
     late final RealtimeChannel channel;
-    final controller = StreamController<Map<String, dynamic>>(onCancel: () {
-      unawaited(_client.removeChannel(channel));
+    final controller = StreamController<Map<String, dynamic>>(onCancel: () async {
+      await _client.removeChannel(channel);
     });
     channel = _client.channel('private-chat:$conversationId');
     channel.onPostgresChanges(
