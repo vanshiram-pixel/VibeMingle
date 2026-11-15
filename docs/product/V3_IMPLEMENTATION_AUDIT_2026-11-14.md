@@ -157,3 +157,5 @@ This is a source/repository audit, not a live production or legal certification.
 - Read receipts: chat bubbles now show single tick until peer `last_read_at` covers the sent message, then double tick (commit `32b59b07`). UI/CI validation pending.
 
 - Chat search: added an in-conversation search field filtering loaded message text locally (`68c8729b`). This searches currently loaded conversation history; CI pending.
+
+- Analyzer follow-up: repaired reaction-picker nesting and literal newline artifacts introduced during read-receipt/search edits (`3d1b391e`, `52d2fd61`, `8fe9cca3`). New V3 CI must be green before considering these UI changes validated.
