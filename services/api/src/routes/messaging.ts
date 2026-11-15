@@ -8,6 +8,7 @@ const sendSchema=z.object({body:z.string().trim().min(1).max(4000)}).strict();
 const editSchema=z.object({body:z.string().trim().min(1).max(4000)}).strict();
 const idSchema=z.object({messageId:uuid}).strict();
 const conversationSchema=z.object({conversationId:uuid}).strict();
+const reportSchema=z.object({category:z.enum(["harassment","sexual_content","minor_safety","spam","hate","violence","impersonation","scam","other"]),description:z.string().max(2000).optional().default("")}).strict();
 function rpcFail(reply:any,error:{code?:string}){
  const status=error.code==="28000"?401:error.code==="42501"?403:error.code==="22023"?400:400;
  return reply.code(status).send({error:{code:status===401?"UNAUTHENTICATED":status===403?"MESSAGE_FORBIDDEN":"MESSAGE_ACTION_FAILED",message:status===403?"This messaging action is not allowed.":"Messaging action could not be completed."}});
@@ -46,6 +47,14 @@ export async function registerMessagingRoutes(app:FastifyInstance){
  app.delete("/v1/messages/:messageId",async(request,reply)=>{
   const p=idSchema.safeParse(request.params);if(!p.success)return reply.code(400).send({error:{code:"INVALID_MESSAGE",message:"Message id is invalid."}});
   const {client}=await authenticatedSupabase(request);const {data,error}=await client.rpc("message_delete",{p_message:p.data.messageId});if(error)return rpcFail(reply,error);if(!data)return reply.code(404).send({error:{code:"MESSAGE_NOT_FOUND",message:"Message unavailable."}});return reply.send({data:{deleted:true}});
+ });
+ app.post("/v1/messages/:messageId/report",async(request,reply)=>{
+  const p=idSchema.safeParse(request.params);const b=reportSchema.safeParse(request.body);
+  if(!p.success||!b.success)return reply.code(400).send({error:{code:"INVALID_REPORT",message:"Report category, description or message id is invalid."}});
+  const {client}=await authenticatedSupabase(request);
+  const {data,error}=await client.rpc("message_report",{p_message:p.data.messageId,p_category:b.data.category,p_description:b.data.description});
+  if(error)return rpcFail(reply,error);
+  return reply.code(201).send({data:{reportId:data,status:"submitted"}});
  });
  app.post("/v1/conversations/:conversationId/read",async(request,reply)=>{
   const p=conversationSchema.safeParse(request.params);if(!p.success)return reply.code(400).send({error:{code:"INVALID_CONVERSATION",message:"Conversation id is invalid."}});
