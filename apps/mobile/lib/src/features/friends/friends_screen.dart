@@ -101,7 +101,7 @@ class _FriendsScreenState extends State<FriendsScreen>
           if (mounted) _toast('Call ${updated.status.name}');
         }
       });
-      _callSubscriptions.add(statusSub);
+      _callSubscriptions.add(statusSub!);
 
       // Reconcile current server state after subscribing so a fast accept
       // between call_start and realtime subscription cannot be missed.
@@ -109,7 +109,7 @@ class _FriendsScreenState extends State<FriendsScreen>
       if (current.status == CallStatus.accepted || current.status == CallStatus.connecting) {
         await connectAccepted(current);
       } else if (current.status == CallStatus.declined || current.status == CallStatus.ended || current.status == CallStatus.failed || current.status == CallStatus.missed) {
-        await statusSub.cancel();
+        await statusSub?.cancel();
         _callSubscriptions.remove(statusSub);
         if (mounted) _toast('Call ${current.status.name}');
       }
