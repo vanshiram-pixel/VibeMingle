@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final _router = GoRouter(
   routes: [
@@ -67,6 +68,7 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _creating = false;
   bool _busy = false;
   bool get _configured => Supabase.instance.isInitialized;
+  bool get _configured => Supabase.instance.isInitialized;
 
   @override
   void dispose() {
@@ -101,7 +103,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 onPressed: _busy ? null : () => setState(() => _creating = !_creating),
                 child: Text(_creating ? 'Already registered? Sign in' : 'New here? Create account'),
               ),
-              const Text('Authentication is UI-ready; connect Supabase credentials to enable it.',
+              Text(_configured ? 'Supabase Auth configured.' : 'Supabase credentials not configured.',
                   textAlign: TextAlign.center),
             ],
           ),
@@ -116,13 +118,24 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
     setState(() => _busy = true);
-    // Supabase auth wiring is intentionally pending runtime configuration.
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    if (mounted) {
-      setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Supabase setup pending. See apps/mobile/README.md')),
-      );
+    try {
+      if (!_configured) throw const AuthException('Supabase configuration missing');
+      final auth = Supabase.instance.client.auth;
+      if (_creating) {
+        await auth.signUp(email: _email.text.trim(), password: _password.text);
+      } else {
+        await auth.signInWithPassword(email: _email.text.trim(), password: _password.text);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_creating ? 'Signup submitted. Check email if confirmation is enabled.' : 'Signed in successfully.')));
+      }
+    } on AuthException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Auth error: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 }
