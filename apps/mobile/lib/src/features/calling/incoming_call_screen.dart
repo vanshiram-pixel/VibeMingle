@@ -43,7 +43,7 @@ class IncomingCallScreen extends StatelessWidget {
               label: 'Accept',
               icon: video ? Icons.videocam : Icons.call,
               color: Colors.green,
-              onTap: () async { await onAccept(); if (context.mounted) Navigator.pop(context); },
+              onTap: () async { await onAccept(); },
             ),
           ]),
         ]),
