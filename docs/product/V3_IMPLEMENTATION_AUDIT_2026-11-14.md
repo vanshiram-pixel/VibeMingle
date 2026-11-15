@@ -139,3 +139,9 @@ This is a source/repository audit, not a live production or legal certification.
 
 
 - Emoji picker CI fix (2026-11-15): initial picker had a misplaced `.toList()` causing Flutter analyze failure on `5a49b846`; corrected widget mapping with explicit `map<Widget>` in `a7d50a4a`. Current CI must pass before this is marked complete.
+
+
+## Private call requests (2026-11-15) — implementation pending CI and DB smoke
+- Migration `0025_private_call_requests.sql`: participant-only RLS read, server-controlled insert/update, authenticated RPC create/respond/cancel; 90-second expiry, duplicate pending guard, both-direction block check, age assurance checks, accept atomically creates match session.
+- Mobile `CallRequestsScreen`: outgoing request by peer UUID, incoming accept/decline, outgoing status/cancel; Home entry added. Accept opens existing LiveKit VideoCallScreen/session token flow.
+- Commits: migration `8eaae870`, screen `35e19b82`, Home entry `c52903a2`. Verify migration replay, Flutter analyzer, API/V3 CI and device behavior. Notifications/push and friend-only request policy still need integration; recipient can currently be any eligible profile UUID.
