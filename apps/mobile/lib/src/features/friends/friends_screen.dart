@@ -49,40 +49,58 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   Future<void> _startCall(Map<String, dynamic> friend, CallType type) async {
     StreamSubscription<CallSession>? statusSub;
+    var connecting = false;
     try {
       final session = await _calls.startCall(friendId: friend['id'] as String, type: type);
       if (!mounted) return;
       _toast('${type == CallType.video ? 'Video' : 'Audio'} call request sent. Waiting for ${_name(friend)}…');
+
+      Future<void> connectAccepted(CallSession updated) async {
+        if (connecting || !mounted) return;
+        connecting = true;
+        await statusSub?.cancel();
+        try {
+          await _calls.transition(callId: session.id, action: 'connecting');
+          late CallSignalingCoordinator signaling;
+          final controller = WebRtcCallController(
+            sendSignal: (signal) => signaling.send(signal),
+            onRemoteStream: (_) {}, onConnectionState: (_) {},
+          );
+          await controller.initialize(video: type == CallType.video);
+          signaling = CallSignalingCoordinator(repository: _calls, controller: controller,
+            callId: session.id, remoteUserId: session.calleeId);
+          await signaling.startListening();
+          await controller.createOffer();
+          if (!mounted) { await signaling.close(); await controller.close(); return; }
+          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
+            session: session, peerName: _name(friend), controller: controller,
+            signaling: signaling, onEnd: () => _calls.end(session.id),
+            onConnected: () async { await _calls.transition(callId: session.id, action: 'connected'); },
+          )));
+        } catch (e) {
+          try { await _calls.transition(callId: session.id, action: 'failed', reason: 'media_setup_failed'); } catch (_) {}
+          if (mounted) _toast('Call connection failed: $e');
+        }
+      }
+
       statusSub = _calls.sessionUpdates(session.id).listen((updated) async {
         if (updated.status == CallStatus.accepted || updated.status == CallStatus.connecting) {
-          await statusSub?.cancel();
-          try {
-            await _calls.transition(callId: session.id, action: 'connecting');
-            late CallSignalingCoordinator signaling;
-            final controller = WebRtcCallController(
-              sendSignal: (signal) => signaling.send(signal),
-              onRemoteStream: (_) {}, onConnectionState: (_) {},
-            );
-            await controller.initialize(video: type == CallType.video);
-            signaling = CallSignalingCoordinator(repository: _calls, controller: controller,
-              callId: session.id, remoteUserId: session.calleeId);
-            await signaling.startListening();
-            await controller.createOffer();
-            if (!mounted) { await signaling.close(); await controller.close(); return; }
-            Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
-              session: session, peerName: _name(friend), controller: controller,
-              signaling: signaling, onEnd: () => _calls.end(session.id),
-              onConnected: () async { await _calls.transition(callId: session.id, action: 'connected'); },
-            )));
-          } catch (e) {
-            try { await _calls.transition(callId: session.id, action: 'failed', reason: 'media_setup_failed'); } catch (_) {}
-            if (mounted) _toast('Call connection failed: $e');
-          }
+          await connectAccepted(updated);
         } else if (updated.status == CallStatus.declined || updated.status == CallStatus.ended || updated.status == CallStatus.failed || updated.status == CallStatus.missed) {
           await statusSub?.cancel();
           if (mounted) _toast('Call ${updated.status.name}');
         }
       });
+
+      // Reconcile current server state after subscribing so a fast accept
+      // between call_start and realtime subscription cannot be missed.
+      final current = await _calls.getSession(session.id);
+      if (current.status == CallStatus.accepted || current.status == CallStatus.connecting) {
+        await connectAccepted(current);
+      } else if (current.status == CallStatus.declined || current.status == CallStatus.ended || current.status == CallStatus.failed || current.status == CallStatus.missed) {
+        await statusSub.cancel();
+        if (mounted) _toast('Call ${current.status.name}');
+      }
     } catch (e) {
       await statusSub?.cancel();
       if (mounted) _toast('Call could not start: ${e.toString().replaceFirst('Exception: ', '')}');
