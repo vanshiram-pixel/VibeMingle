@@ -24,6 +24,13 @@ class MatchQueueRepository {
   return await _client.rpc('match_session_end',params:{'p_session_id':sessionId,'p_reason':reason}) as bool;
  }
 
+ Future<Map<String,dynamic>> acceptSession({required String sessionId}) async {
+  final r=await _client.rpc('match_session_accept',params:{'p_session_id':sessionId});
+  return Map<String,dynamic>.from(r as Map);
+ }
+ Future<bool> declineSession({required String sessionId}) async =>
+  await _client.rpc('match_session_decline',params:{'p_session_id':sessionId}) as bool;
+
  /// Listen to only this authenticated user's server-generated match events.
  Stream<Map<String,dynamic>> matchEvents() {
   final uid=_client.auth.currentUser?.id;
