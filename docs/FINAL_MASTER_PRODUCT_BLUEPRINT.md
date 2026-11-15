@@ -249,3 +249,7 @@ Every integration has provider configuration, secrets server-side, consent, quot
 
 ## 12. Locked Stranger Match → Friend → Chat/Private Call flow
 The permanent, detailed contract is in [docs/STRANGER_MATCH_FRIEND_FLOW.md](STRANGER_MATCH_FRIEND_FLOW.md). Key invariant: Match Add Friend sends a mutual request; Accept creates friendship; Follow remains independent; canonical match conversation is reused; private call after friendship still requires receiver Accept and privacy permission; former non-friend matches cannot direct-call/rejoin; Block overrides every relationship and contact path. This is specified, not yet implemented or runtime verified.
+
+
+## V4 Final Hard Locks & Consolidation
+The authoritative V4 scope, social taxonomy, matching modes, consent/privacy rules, engineering invariants and acceptance gates are in [V4_FINAL_HARD_LOCKS.md](./V4_FINAL_HARD_LOCKS.md). V1/V2/V3 remain preserved. Connections is the only social navigation category; Friends and Follow retain distinct relationship semantics. Fans maps to Followers and is not a separate feature system.
