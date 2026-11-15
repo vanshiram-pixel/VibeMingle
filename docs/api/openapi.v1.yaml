@@ -1,0 +1,313 @@
+openapi: 3.1.0
+info:
+  title: VibeMingle V4.1 API
+  version: 1.0.0-contract
+  description: |
+    Contract-first API baseline. Authentication is Supabase-issued JWT.
+    This is a logical contract; endpoints require server implementation and contract tests.
+servers:
+  - url: https://api.vibemingle.example/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Identity
+  - name: Social
+  - name: Chat
+  - name: Match
+  - name: Calls
+  - name: Safety
+paths:
+  /me:
+    get:
+      tags: [Identity]
+      operationId: getMe
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /me/profile:
+    patch:
+      tags: [Identity]
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                username: { type: string, minLength: 3, maxLength: 24, pattern: '^[A-Za-z0-9_]+$' }
+                displayName: { type: string, maxLength: 60 }
+                bio: { type: string, maxLength: 500 }
+                locale: { type: string, maxLength: 16 }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /friend-requests:
+    get:
+      tags: [Social]
+      operationId: listFriendRequests
+      parameters:
+        - in: query
+          name: direction
+          schema: { type: string, enum: [incoming, outgoing], default: incoming }
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    post:
+      tags: [Social]
+      operationId: createFriendRequest
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipientId]
+              additionalProperties: false
+              properties:
+                recipientId: { type: string, format: uuid }
+      responses:
+        '201': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /friend-requests/{requestId}/accept:
+    post:
+      tags: [Social]
+      operationId: acceptFriendRequest
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /follows/{userId}:
+    put:
+      tags: [Social]
+      operationId: followUser
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [Social]
+      operationId: unfollowUser
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '204': { description: Follow removed }
+  /blocks/{userId}:
+    put:
+      tags: [Safety]
+      operationId: blockUser
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    delete:
+      tags: [Safety]
+      operationId: unblockUser
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '204': { description: Block removed }
+  /conversations:
+    post:
+      tags: [Chat]
+      operationId: getOrCreateConversation
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [participantId]
+              additionalProperties: false
+              properties:
+                participantId: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /conversations/{conversationId}/messages:
+    get:
+      tags: [Chat]
+      operationId: listEncryptedMessages
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/Cursor'
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    post:
+      tags: [Chat]
+      operationId: sendEncryptedMessage
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EncryptedMessage' }
+      responses:
+        '201': { $ref: '#/components/responses/Ok' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /matches/queue:
+    post:
+      tags: [Match]
+      operationId: joinMatchQueue
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientRequestId, filters]
+              additionalProperties: false
+              properties:
+                clientRequestId: { type: string, format: uuid }
+                filters:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    ageMin: { type: integer, minimum: 18, maximum: 100 }
+                    ageMax: { type: integer, minimum: 18, maximum: 100 }
+                    gender: { type: string, enum: [any, male, female, other] }
+                    languages: { type: array, maxItems: 10, items: { type: string, maxLength: 16 } }
+                    interests: { type: array, maxItems: 20, items: { type: string, maxLength: 32 } }
+      responses:
+        '202': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /matches/{sessionId}/next:
+    post:
+      tags: [Match]
+      operationId: nextMatch
+      parameters: [{ $ref: '#/components/parameters/SessionId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '202': { $ref: '#/components/responses/Ok' }
+        '429': { description: Server-enforced 15-second cooldown }
+  /calls:
+    post:
+      tags: [Calls]
+      operationId: requestPrivateCall
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipientId, mediaType]
+              additionalProperties: false
+              properties:
+                recipientId: { type: string, format: uuid }
+                mediaType: { type: string, enum: [audio, video] }
+      responses:
+        '201': { $ref: '#/components/responses/Ok' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /calls/{callId}/accept:
+    post:
+      tags: [Calls]
+      operationId: acceptPrivateCall
+      parameters: [{ $ref: '#/components/parameters/CallId' }]
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports:
+    post:
+      tags: [Safety]
+      operationId: submitReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetType, targetId, reason]
+              additionalProperties: false
+              properties:
+                targetType: { type: string, enum: [user, message, call, match] }
+                targetId: { type: string, format: uuid }
+                reason: { type: string, enum: [harassment, scam, spam, threat, impersonation, other] }
+                evidenceIds: { type: array, maxItems: 10, items: { type: string, format: uuid } }
+      responses:
+        '201': { $ref: '#/components/responses/Ok' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Cursor:
+      in: query
+      name: cursor
+      schema: { type: string, maxLength: 512 }
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 128 }
+    UserId:
+      in: path
+      name: userId
+      required: true
+      schema: { type: string, format: uuid }
+    RequestId:
+      in: path
+      name: requestId
+      required: true
+      schema: { type: string, format: uuid }
+    ConversationId:
+      in: path
+      name: conversationId
+      required: true
+      schema: { type: string, format: uuid }
+    SessionId:
+      in: path
+      name: sessionId
+      required: true
+      schema: { type: string, format: uuid }
+    CallId:
+      in: path
+      name: callId
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    EncryptedMessage:
+      type: object
+      required: [clientMessageId, ciphertext, protocolVersion, keyEpoch]
+      additionalProperties: false
+      properties:
+        clientMessageId: { type: string, format: uuid }
+        ciphertext: { type: string, minLength: 16, maxLength: 65536, description: Base64/encoded opaque ciphertext; never plaintext }
+        protocolVersion: { type: string, maxLength: 32 }
+        keyEpoch: { type: integer, minimum: 0 }
+        attachmentIds: { type: array, maxItems: 10, items: { type: string, format: uuid } }
+    Error:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string, maxLength: 240 }
+        requestId: { type: string, format: uuid }
+  Envelope:
+    type: object
+    required: [data, error, request_id]
+    properties:
+      data: {}
+      error: { oneOf: [{ type: 'null' }, { $ref: '#/components/schemas/Error' }] }
+      request_id: { type: string, format: uuid }
+  responses:
+    Ok:
+      description: Successful response envelope
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Envelope' }
+    BadRequest: { description: Invalid request }
+    Unauthorized: { description: Authentication required }
+    Forbidden: { description: Not authorized or blocked }
+    Conflict: { description: State conflict or duplicate active operation }
+    TooLarge: { description: Payload exceeds enforced limit }
