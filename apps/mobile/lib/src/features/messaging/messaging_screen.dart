@@ -124,7 +124,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
   RealtimeChannel? _typingChannel;
   Timer? _typingTimer;
   bool _peerTyping = false;
-  String? _peerUserId;
 
   @override
   void initState() {
@@ -166,7 +165,23 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
-  void _onTypingChanged(String value) {\n    if (value.trim().isEmpty) { _stopTyping(); return; }\n    _typingChannel?.sendBroadcastMessage(event: 'typing', payload: {\n      'user_id': _db.auth.currentUser?.id, 'typing': true,\n    });\n    _typingTimer?.cancel();\n    _typingTimer = Timer(const Duration(milliseconds: 1200), _stopTyping);\n  }\n\n  void _stopTyping() {\n    _typingTimer?.cancel();\n    _typingChannel?.sendBroadcastMessage(event: 'typing', payload: {\n      'user_id': _db.auth.currentUser?.id, 'typing': false,\n    });\n  }\n\n  Future<void> _send() async {
+  void _onTypingChanged(String value) {
+    if (value.trim().isEmpty) { _stopTyping(); return; }
+    _typingChannel?.sendBroadcastMessage(event: 'typing', payload: {
+      'user_id': _db.auth.currentUser?.id, 'typing': true,
+    });
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(milliseconds: 1200), _stopTyping);
+  }
+
+  void _stopTyping() {
+    _typingTimer?.cancel();
+    _typingChannel?.sendBroadcastMessage(event: 'typing', payload: {
+      'user_id': _db.auth.currentUser?.id, 'typing': false,
+    });
+  }
+
+  Future<void> _send() async {
     final body = _input.text.trim();
     if (body.isEmpty || _sending) return;
     setState(() => _sending = true);
@@ -270,7 +285,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
   @override
   void dispose() {
     _input.dispose();
-    _typingTimer?.cancel();\n    _stopTyping();\n    if (_typingChannel != null) _db.removeChannel(_typingChannel!);\n    if (_channel != null) _db.removeChannel(_channel!);
+    _typingTimer?.cancel();
+    _stopTyping();
+    if (_typingChannel != null) _db.removeChannel(_typingChannel!);
+    if (_channel != null) _db.removeChannel(_channel!);
     super.dispose();
   }
 
