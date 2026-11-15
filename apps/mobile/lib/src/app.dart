@@ -214,12 +214,30 @@ class _IncomingCallListenerState extends State<IncomingCallListener> {
   @override
   void initState() {
     super.initState();
-    _subscription = _calls.incomingCalls().listen((session) {
-      if (!mounted || !_presented.add(session.id)) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _showIncoming(session);
-      });
+    // Subscribe first, then query: closes the launch-time INSERT race.
+    _subscription = _calls.incomingCalls().listen(_presentIncoming);
+    unawaited(_recoverPendingIncoming());
+  }
+
+  void _presentIncoming(dynamic session) {
+    if (!mounted || !_presented.add(session.id)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showIncoming(session);
     });
+  }
+
+  Future<void> _recoverPendingIncoming() async {
+    try {
+      final pending = await _calls.pendingIncomingCalls();
+      for (final session in pending) {
+        _presentIncoming(session);
+      }
+    } catch (_) {
+      // Realtime remains active; transient query errors should not crash Home.
+    }
+  }
+
+  //
   }
 
   Future<void> _showIncoming(dynamic session) async {
