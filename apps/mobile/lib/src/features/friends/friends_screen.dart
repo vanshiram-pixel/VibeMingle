@@ -72,6 +72,7 @@ class _FriendsScreenState extends State<FriendsScreen>
             Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
               session: session, peerName: _name(friend), controller: controller,
               signaling: signaling, onEnd: () => _calls.end(session.id),
+              onConnected: () async { await _calls.transition(callId: session.id, action: 'connected'); },
               onConnected: () => _calls.transition(callId: session.id, action: 'connected').then((_) {}),
             )));
           } catch (e) {
