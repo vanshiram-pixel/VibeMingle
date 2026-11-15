@@ -44,7 +44,7 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   Future<void> _startCall(Map<String, dynamic> friend, CallType type) async {
     try {
-      final session = await _calls.startCall(friendId: friend['id'] as String, type: type);
+      await _calls.startCall(friendId: friend['id'] as String, type: type);
       if (!mounted) return;
       _toast('${type == CallType.video ? 'Video' : 'Audio'} call request sent. Waiting for ${_name(friend)}…');
     } catch (e) {
