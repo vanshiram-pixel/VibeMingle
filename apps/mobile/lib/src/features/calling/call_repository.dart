@@ -25,16 +25,27 @@ class CallRepository {
     return CallSession.fromJson(Map<String, dynamic>.from(row as Map));
   }
 
+  /// Server RPC parameter is p_next_status (not p_action).
+  /// Restrict client actions to the state machine's known transitions.
   Future<CallSession> transition({
     required String callId,
     required String action,
+    String? reason,
   }) async {
+    const allowed = {'accepted', 'connecting', 'connected', 'declined', 'missed', 'ended', 'failed'};
+    if (!allowed.contains(action)) throw ArgumentError.value(action, 'action', 'Unsupported call transition');
     final row = await _db.rpc('call_transition', params: {
       'p_call_id': callId,
-      'p_action': action,
+      'p_next_status': action,
+      'p_end_reason': reason,
     });
     return CallSession.fromJson(Map<String, dynamic>.from(row as Map));
   }
+
+  Future<CallSession> accept(String callId) => transition(callId: callId, action: 'accepted');
+  Future<CallSession> decline(String callId) => transition(callId: callId, action: 'declined');
+  Future<CallSession> end(String callId, {String reason = 'user_ended'}) =>
+      transition(callId: callId, action: 'ended', reason: reason);
 
   Future<List<CallSession>> history({int limit = 50}) async {
     final uid = _db.auth.currentUser?.id;
