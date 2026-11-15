@@ -127,3 +127,6 @@ This is a source/repository audit, not a live production or legal certification.
 
 
 - Mobile messaging edit/delete UX increment (2026-11-15): long-press own message now opens actions for Edit or Delete; Edit uses authenticated `message_edit` RPC and refreshes the thread; Delete retains soft-delete RPC. Commit `087dffbe`. Awaiting CI verification; no Android device interaction performed.
+
+
+- Messaging conversation list UX increment (2026-11-15): list now sorts by conversation `updated_at` newest-first and surfaces an unread indicator when conversation activity is newer than member `last_read_at`. Commit `58a6f1f7`; awaiting CI. Unread is based on conversation activity timestamp (not per-message delivery receipts).
