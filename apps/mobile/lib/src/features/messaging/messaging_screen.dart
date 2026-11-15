@@ -190,6 +190,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
             title: Text(entry.value),
             onTap: () => Navigator.pop(ctx, entry.key))),
         const SizedBox(height: 12),
+        ],
       )),
     );
     if (category == null) return;
