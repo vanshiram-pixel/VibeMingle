@@ -59,6 +59,61 @@ class CallRepository {
       .map(CallSession.fromJson).toList();
   }
 
+  /// Send SDP/ICE only to the other authenticated call participant.
+  /// Database RLS rejects non-participants, wrong recipients and inactive calls.
+  Future<void> sendSignal({
+    required String callId,
+    required String recipientId,
+    required String kind,
+    required Map<String, dynamic> payload,
+  }) async {
+    if (!const {'offer', 'answer', 'ice', 'renegotiate', 'hangup'}.contains(kind)) {
+      throw ArgumentError.value(kind, 'kind');
+    }
+    if (payload.toString().length > 60000) {
+      throw ArgumentError('Call signal payload is too large');
+    }
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) throw StateError('Sign in before signaling');
+    await _db.from('call_signals').insert({
+      'call_id': callId,
+      'sender_id': uid,
+      'recipient_id': recipientId,
+      'kind': kind,
+      'payload': payload,
+      'expires_at': DateTime.now().toUtc().add(const Duration(minutes: 10)).toIso8601String(),
+    });
+  }
+
+  /// Listen only to signals addressed to this user for this call.
+  /// PostgreSQL changes are filtered by call ID and further constrained by RLS.
+  Stream<Map<String, dynamic>> signalsForCall(String callId) {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) throw StateError('Sign in before signaling');
+    late final RealtimeChannel channel;
+    final controller = StreamController<Map<String, dynamic>>(onCancel: () async {
+      await _db.removeChannel(channel);
+    });
+    channel = _db.channel('call-signals-$callId-$uid')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'call_signals',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'call_id',
+          value: callId,
+        ),
+        callback: (event) {
+          final row = event.newRecord;
+          if (row['recipient_id'] == uid && !controller.isClosed) {
+            controller.add(Map<String, dynamic>.from(row));
+          }
+        },
+      ).subscribe();
+    return controller.stream;
+  }
+
   /// Subscribe to server-authorized call events for this user.
   /// Realtime RLS/channel authorization must restrict events to participants.
   Stream<CallStateEvent> eventsForUser() {
