@@ -24,7 +24,7 @@ class _MatchScreenState extends State<MatchScreen>{
   _heartbeat?.cancel();_heartbeat=Timer.periodic(const Duration(seconds:15),(_)=>_repo.heartbeat());
   if(mounted)setState(()=>_queued=true);
  }
- Future<void> _leave()async{
+ Future<void> _revoke()async{\n  _heartbeat?.cancel();\n  if(_queued)await _repo.leave();\n  await _repo.setConsent(enabled:false,version:'v4.1-consent-1');\n  if(mounted)setState(()=>_queued=false);\n }\n Future<void> _leave()async{
   _heartbeat?.cancel();await _repo.leave();
   if(mounted)setState(()=>_queued=false);
  }
@@ -46,6 +46,6 @@ class _MatchScreenState extends State<MatchScreen>{
    const SizedBox(height:12),
    Text(_queued?'Queue active — searching for a compatible person…':'Queue inactive',textAlign:TextAlign.center),
    const SizedBox(height:20),
-   OutlinedButton(onPressed:_busy?null:()=>_run(()=>_repo.setConsent(enabled:false,version:'v4.1-consent-1')),child:const Text('Revoke matching consent')),
+   OutlinedButton(onPressed:_busy?null:()=>_run(_revoke),child:const Text('Revoke matching consent')),
   ]));
 }
