@@ -1,7 +1,8 @@
 -- VibeMingle 0027: reply links in messages.
 alter table public.messages add column if not exists reply_to_message uuid references public.messages(id) on delete set null;
 create index if not exists messages_reply_to_idx on public.messages(reply_to_message) where reply_to_message is not null;
-drop function if exists public.message_send(uuid,text);\ncreate or replace function public.message_send(p_conversation uuid,p_body text,p_reply_to uuid default null)
+drop function if exists public.message_send(uuid,text);
+create or replace function public.message_send(p_conversation uuid,p_body text,p_reply_to uuid default null)
 returns public.messages language plpgsql security definer set search_path=public as $$
 declare v_actor uuid:=auth.uid(); v_row public.messages%rowtype; v_conv public.conversations%rowtype; v_peer uuid;
 begin
