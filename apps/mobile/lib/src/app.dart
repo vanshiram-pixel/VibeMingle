@@ -4,6 +4,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'features/friends/friends_screen.dart';
 import 'features/messaging/chat_thread_screen.dart';
 import 'features/matching/match_screen.dart';
+import 'features/calling/call_repository.dart';
+import 'features/calling/call_signaling_coordinator.dart';
+import 'features/calling/webrtc_call_controller.dart';
+import 'features/calling/incoming_call_screen.dart';
+import 'features/calling/active_call_screen.dart';
 
 final _router = GoRouter(
   routes: [
@@ -73,6 +78,7 @@ class HomeScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              const IncomingCallListener(),
               CircleAvatar(radius: 34, child: Text((user.email ?? 'V')[0].toUpperCase())),
               const SizedBox(height: 12),
               Text(user.email ?? 'VibeMingle user', textAlign: TextAlign.center,
@@ -188,4 +194,74 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
+}
+
+
+/// Keeps incoming call realtime subscription active while the user is on Home.
+class IncomingCallListener extends StatefulWidget {
+  const IncomingCallListener({super.key});
+  @override
+  State<IncomingCallListener> createState() => _IncomingCallListenerState();
+}
+
+class _IncomingCallListenerState extends State<IncomingCallListener> {
+  late final CallRepository _calls = CallRepository(Supabase.instance.client);
+  StreamSubscription? _subscription;
+  final Set<String> _presented = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = _calls.incomingCalls().listen((session) {
+      if (!mounted || !_presented.add(session.id)) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showIncoming(session);
+      });
+    });
+  }
+
+  Future<void> _showIncoming(dynamic session) async {
+    final navigator = Navigator.of(context);
+    await navigator.push(MaterialPageRoute<void>(builder: (_) => IncomingCallScreen(
+      callerName: 'VibeMingle user',
+      session: session,
+      onDecline: () => _calls.decline(session.id),
+      onAccept: () async {
+        await _calls.accept(session.id);
+        await _calls.transition(callId: session.id, action: 'connecting');
+        late CallSignalingCoordinator signaling;
+        final controller = WebRtcCallController(
+          sendSignal: (signal) => signaling.send(signal),
+          onRemoteStream: (_) {},
+          onConnectionState: (_) {},
+        );
+        await controller.initialize(video: session.type.name == 'video');
+        signaling = CallSignalingCoordinator(
+          repository: _calls, controller: controller, callId: session.id,
+          remoteUserId: session.callerId,
+        );
+        await signaling.startListening();
+        if (!mounted) {
+          await signaling.close();
+          await controller.close();
+          return;
+        }
+        navigator.pushReplacement(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
+          session: session, peerName: 'VibeMingle user', controller: controller,
+          signaling: signaling,
+          onEnd: () => _calls.end(session.id),
+        )));
+      },
+    )));
+  }
+
+  @override
+  void dispose() {
+    unawaited(_subscription?.cancel());
+    unawaited(_calls.dispose());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
