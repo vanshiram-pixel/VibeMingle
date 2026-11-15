@@ -169,3 +169,5 @@ This is a source/repository audit, not a live production or legal certification.
 
 - Reply/media SQL smoke correction (2026-11-15): migration `0027_message_replies.sql` had a literal escaped newline before its replacement `message_send` function; normalized to an actual newline. The earlier DB smoke failure was migration parsing at 0027 (not 0028/0029), so rerun local DB smoke after correction.
 - Chat video playback UX added (2026-11-15): `video_player` dependency and a dedicated in-app network video viewer with play/pause controls for signed attachment URLs. CI/analyzer and Android playback verification pending; audio attachments remain display-only.
+
+- SQL smoke follow-up: migration 0029 attachment RLS had ambiguous outer `conversation_id`/`message_id` references in the sender-insert policy. Qualified these as `message_attachments.*` in commit `pending`; rerun Supabase Local DB Smoke to verify full migration replay.
