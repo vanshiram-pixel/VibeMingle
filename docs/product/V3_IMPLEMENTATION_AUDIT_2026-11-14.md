@@ -171,3 +171,5 @@ This is a source/repository audit, not a live production or legal certification.
 - Chat video playback UX added (2026-11-15): `video_player` dependency and a dedicated in-app network video viewer with play/pause controls for signed attachment URLs. CI/analyzer and Android playback verification pending; audio attachments remain display-only.
 
 - SQL smoke follow-up: migration 0029 attachment RLS had ambiguous outer `conversation_id`/`message_id` references in the sender-insert policy. Qualified these as `message_attachments.*` in commit `pending`; rerun Supabase Local DB Smoke to verify full migration replay.
+
+- Voice messages (2026-11-15): added `record` and `audioplayers`; messaging UI microphone toggle starts/stops AAC recording, uploads private audio attachment, inserts voice message and opens an in-app audio play/pause screen. Flutter CI pending; Android microphone permission manifest and real-device recording/playback/storage checks still required. Commit `pending`.
