@@ -115,7 +115,17 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
         title: Text(widget.peerName),
         leading: IconButton(
           icon: const Icon(Icons.keyboard_arrow_down),
-          onPressed: () async {\n            final leave = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(\n              title: const Text('Call is active'),\n              content: const Text('End the call before leaving this screen?'),\n              actions: [\n                TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Stay')),\n                TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('End call')),\n              ],\n            ));\n            if (leave == true) await _endCall();\n          },
+          onPressed: () async {
+            final leave = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+              title: const Text('Call is active'),
+              content: const Text('End the call before leaving this screen?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Stay')),
+                TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('End call')),
+              ],
+            ));
+            if (leave == true) await _endCall();
+          },
         ),
       ),
       body: SafeArea(
