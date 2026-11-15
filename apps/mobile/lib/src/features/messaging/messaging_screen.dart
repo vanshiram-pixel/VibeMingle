@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -123,6 +124,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
   Map<String, dynamic>? _replyTo;
   final _search = TextEditingController();
   RealtimeChannel? _channel;
+  RealtimeChannel? _typingChannel;
+  Timer? _typingTimer;
+  bool _peerTyping = false;
 
   @override
   void initState() {
@@ -134,6 +138,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
         filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq,
           column: 'conversation_id', value: widget.conversationId),
         callback: (_) => _load()).subscribe();
+    final uid = _db.auth.currentUser!.id;
+    _typingChannel = _db.channel('typing-${widget.conversationId}')
+      .onBroadcast(event: 'typing', callback: (payload) {
+        if (!mounted || payload['user_id'] == uid) return;
+        setState(() => _peerTyping = payload['typing'] == true);
+      }).subscribe();
   }
 
   Future<void> _load() async {
@@ -222,6 +232,20 @@ class _ConversationScreenState extends State<ConversationScreen> {
     );
   }
 
+  void _broadcastTyping(String text) {
+    final channel = _typingChannel;
+    if (channel == null) return;
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) return;
+    channel.sendBroadcastMessage(event: 'typing', payload: {'user_id': uid, 'typing': text.trim().isNotEmpty});
+    _typingTimer?.cancel();
+    if (text.trim().isNotEmpty) {
+      _typingTimer = Timer(const Duration(seconds: 2), () {
+        channel.sendBroadcastMessage(event: 'typing', payload: {'user_id': uid, 'typing': false});
+      });
+    }
+  }
+
   Future<void> _send() async {
     final body = _input.text.trim();
     if (body.isEmpty || _sending) return;
@@ -230,6 +254,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       await _db.rpc('message_send', params: {
         'p_conversation': widget.conversationId, 'p_body': body, 'p_reply_to': _replyTo?['id']});
       _input.clear();
+      _broadcastTyping('');
       if (mounted) setState(() => _replyTo = null);
       await _load();
     } catch (e) {
@@ -336,6 +361,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   @override
   void dispose() {
+    _typingTimer?.cancel();
+    _typingChannel?.sendBroadcastMessage(event: 'typing', payload: {'user_id': _db.auth.currentUser?.id, 'typing': false});
+    _typingChannel?.unsubscribe();
     _input.dispose();
     _search.dispose();
     if (_channel != null) _db.removeChannel(_channel!);
@@ -419,11 +447,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
             },
           )),
         if (_replyTo != null) ListTile(dense: true, leading: const Icon(Icons.reply), title: Text('Replying: ${_replyTo!['body']}', maxLines: 1, overflow: TextOverflow.ellipsis), trailing: IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _replyTo = null))),
+        if (_peerTyping) const Padding(padding: EdgeInsets.only(left: 16, bottom: 4), child: Text('Friend is typing…', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic))),
         SafeArea(child: Padding(padding: const EdgeInsets.all(8),
           child: Row(children: [
             IconButton(onPressed: _showEmojiPicker, tooltip: 'Emoji',
               icon: const Icon(Icons.emoji_emotions_outlined)),
-            Expanded(child: TextField(controller: _input, minLines: 1, maxLines: 4,
+            Expanded(child: TextField(controller: _input, onChanged: _broadcastTyping, minLines: 1, maxLines: 4,
               decoration: const InputDecoration(hintText: 'Message',
                 border: OutlineInputBorder()))),
             IconButton(onPressed: _sending ? null : _send,
