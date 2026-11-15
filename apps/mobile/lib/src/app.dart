@@ -224,8 +224,16 @@ class _IncomingCallListenerState extends State<IncomingCallListener> {
 
   Future<void> _showIncoming(dynamic session) async {
     final navigator = Navigator.of(context);
+    var callerName = 'VibeMingle user';
+    try {
+      final profile = await Supabase.instance.client.from('profiles').select('display_name,username').eq('id', session.callerId).maybeSingle();
+      callerName = (profile?['display_name'] as String?)?.trim().isNotEmpty == true
+          ? (profile!['display_name'] as String).trim()
+          : '@${profile?['username'] ?? 'user'}';
+    } catch (_) {}
+    if (!mounted) return;
     await navigator.push(MaterialPageRoute<void>(builder: (_) => IncomingCallScreen(
-      callerName: 'VibeMingle user',
+      callerName: callerName,
       session: session,
       onDecline: () => _calls.decline(session.id),
       onAccept: () async {
@@ -249,7 +257,7 @@ class _IncomingCallListenerState extends State<IncomingCallListener> {
           return;
         }
         navigator.push(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
-          session: session, peerName: 'VibeMingle user', controller: controller,
+          session: session, peerName: callerName, controller: controller,
           signaling: signaling,
           onEnd: () => _calls.end(session.id),
           onConnected: () => _calls.transition(callId: session.id, action: 'connected').then((_) {}),
