@@ -93,7 +93,7 @@ class _MatchScreenState extends State<MatchScreen> {
               subtitle: const Text('You can leave the queue or revoke consent anytime.'),
             ),
             DropdownButtonFormField<String>(
-              value: _mode,
+              initialValue: _mode,
               decoration: const InputDecoration(labelText: 'Matching mode'),
               items: const [
                 DropdownMenuItem(value: 'random', child: Text('Random')),
