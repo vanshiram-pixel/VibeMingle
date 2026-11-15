@@ -166,7 +166,8 @@ class CallRepository {
       .order('created_at', ascending: true).limit(10);
     return List<Map<String, dynamic>>.from(rows).map(CallSession.fromJson).toList();
   }
-\n  /// Realtime status changes for one participant-authorized call session.
+
+  /// Realtime status changes for one participant-authorized call session.
   Stream<CallSession> sessionUpdates(String callId) {
     final uid = _db.auth.currentUser?.id;
     if (uid == null) throw StateError('Sign in before listening for calls');
