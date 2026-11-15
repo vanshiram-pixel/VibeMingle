@@ -370,7 +370,17 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       borderRadius: BorderRadius.circular(16)),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min, children: [
-                        if (message['reply_to_message'] is Map) Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withValues(alpha: .35), borderRadius: BorderRadius.circular(8)), child: Text('↪ ${(message['reply_to_message'] as Map)['body'] ?? 'Reply', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
+                        if (message['reply_to_message'] is Map) Container(
+                          margin: const EdgeInsets.only(bottom: 6),
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface.withValues(alpha: .35),
+                            borderRadius: BorderRadius.circular(8)),
+                          child: Text(
+                            '↪ ${(message['reply_to_message'] as Map)['body'] ?? 'Reply'}',
+                            maxLines: 2, overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12)),
+                        ),
                         Text(message['deleted_at'] != null ? 'Message deleted' :
                           message['body'].toString()),
                         if (message['deleted_at'] == null) ...[
