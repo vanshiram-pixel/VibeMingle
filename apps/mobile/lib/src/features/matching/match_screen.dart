@@ -12,7 +12,10 @@ class _MatchScreenState extends State<MatchScreen> {
   final _repo = MatchQueueRepository();
   bool _consent = false, _queued = false, _busy = false;
   String _mode = 'random';
-  Timer? _heartbeat;\n  StreamSubscription<Map<String,dynamic>>? _events;\n  String? _sessionId;\n  String _sessionState='waiting';
+  Timer? _heartbeat;
+  StreamSubscription<Map<String,dynamic>>? _events;
+  String? _sessionId;
+  String _sessionState='waiting';
 
   @override
   void dispose() {
@@ -35,7 +38,15 @@ class _MatchScreenState extends State<MatchScreen> {
   Future<void> _join() async {
     if (!_consent) throw Exception('Please enable matching consent first.');
     await _repo.setConsent(enabled: true, version: 'v4.1-consent-1');
-    await _repo.enter(mode: _mode);\n    await _events?.cancel();\n    _events=_repo.matchEvents().listen((event){\n      if(!mounted)return;\n      setState((){\n        if(event['event_type']=='matched'){_sessionId=event['session_id']?.toString();_sessionState=event['state']?.toString()??'reserved';}\n        else if(event['session_id']==_sessionId){_sessionState=event['state']?.toString()??_sessionState;if(_sessionState=='ended'||_sessionState=='failed'||_sessionState=='cancelled'){_sessionId=null;}}\n      });\n    },onError:(_){if(mounted)setState(()=>_sessionState='reconnecting');});
+    await _repo.enter(mode: _mode);
+    await _events?.cancel();
+    _events=_repo.matchEvents().listen((event){
+      if(!mounted)return;
+      setState((){
+        if(event['event_type']=='matched'){_sessionId=event['session_id']?.toString();_sessionState=event['state']?.toString()??'reserved';}
+        else if(event['session_id']==_sessionId){_sessionState=event['state']?.toString()??_sessionState;if(_sessionState=='ended'||_sessionState=='failed'||_sessionState=='cancelled'){_sessionId=null;}}
+      });
+    },onError:(_){if(mounted)setState(()=>_sessionState='reconnecting');});
     _heartbeat?.cancel();
     _heartbeat = Timer.periodic(const Duration(seconds: 15), (_) async {
       try {
@@ -74,7 +85,10 @@ class _MatchScreenState extends State<MatchScreen> {
             const Text('Matching requires verified age eligibility, an available profile, online presence, and explicit consent. Your exact location is never shown.'),
             SwitchListTile(
               value: _consent,
-              onChanged: (v) {\n                setState(() => _consent = v);\n                if (!v) _run(_revoke);\n              },
+              onChanged: (v) {
+                setState(() => _consent = v);
+                if (!v) _run(_revoke);
+              },
               title: const Text('I consent to stranger matching'),
               subtitle: const Text('You can leave the queue or revoke consent anytime.'),
             ),
