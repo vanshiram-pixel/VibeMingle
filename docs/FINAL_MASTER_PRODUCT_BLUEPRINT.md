@@ -253,3 +253,12 @@ The permanent, detailed contract is in [docs/STRANGER_MATCH_FRIEND_FLOW.md](STRA
 
 ## V4 Final Hard Locks & Consolidation
 The authoritative V4 scope, social taxonomy, matching modes, consent/privacy rules, engineering invariants and acceptance gates are in [V4_FINAL_HARD_LOCKS.md](./V4_FINAL_HARD_LOCKS.md). V1/V2/V3 remain preserved. Connections is the only social navigation category; Friends and Follow retain distinct relationship semantics. Fans maps to Followers and is not a separate feature system.
+
+
+## V4.2 Advanced Add-ons — integrated scope extension
+
+The advanced add-ons are part of the unified product scope and must be reconciled into every relevant screen, route, backend contract, realtime channel, Admin panel, and test plan. See [V4_ADVANCED_ADDONS_TRANSLATION_CHAT_SECURITY.md](./V4_ADVANCED_ADDONS_TRANSLATION_CHAT_SECURITY.md) for full behavior and constraints.
+
+Required integrations include: manual matching filters and application/preferences preview; 15-second Next lock (safety exits immediate); real-time voice translation, language detection, translated/original captions and translation audio for stranger/private audio/video calls from all entry points; advanced E2EE chat and media/voice notes/reactions/reply/receipts/search/retention/call shortcuts; privacy-preserving AI abuse signals and human-reviewed incidents; case-scoped evidence export (no blanket chat ZIP); restricted IP/device risk information; Admin ON-by-default service controls, hide/emergency-stop/rollout/restore/health controls.
+
+Owner instruction excludes sexual exploitation/grooming indicators from general AI monitoring. Other defined safety controls remain. E2EE must not be weakened by an Admin backdoor or universal decryption key. Scope is specified, not implementation evidence.
