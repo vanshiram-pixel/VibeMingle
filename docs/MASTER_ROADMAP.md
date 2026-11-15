@@ -144,3 +144,12 @@ Screen-by-screen user journeys, every page/button/popup behavior, V1/V2/V3 scope
 - Former match without friendship cannot direct-call or reconnect to old session.
 - Block overrides all social, message, match, and call paths.
 - Detailed permanent contract: [STRANGER_MATCH_FRIEND_FLOW.md](STRANGER_MATCH_FRIEND_FLOW.md). This is a locked specification, not evidence of implementation.
+
+
+## Version 4 — Final Hard Locks (2026-11-15)
+- V1/V2/V3 preserved as scope/delivery tiers; V4 is the unified authoritative spec, not a claim of implementation completion.
+- Final hard locks and acceptance gates: [V4_FINAL_HARD_LOCKS.md](./V4_FINAL_HARD_LOCKS.md).
+- Social UI consolidated to one **Connections** hub (Friends, Requests, Followers, Following, Discover People); Fans is not a separate system. Friend remains mutual; Follow remains one-way.
+- Matching modes: Instant Random, Next/Random Switch, Manual Stranger Search with adult-only gender/age/language preferences; one shared server matchmaking engine; filters never silently bypassed.
+- Profile intro video is preview only; explicit private call request and receiver acceptance required.
+- V4 is product scope lock. Actual implementation/integration/verification status must remain evidence-based; production release needs user approval.
