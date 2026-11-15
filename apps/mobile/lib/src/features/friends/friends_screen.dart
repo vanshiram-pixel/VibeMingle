@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../calling/call_models.dart';
 import '../calling/call_repository.dart';
+import '../calling/call_signaling_coordinator.dart';
+import '../calling/webrtc_call_controller.dart';
+import '../calling/active_call_screen.dart';
 import 'friend_repository.dart';
 
 class FriendsScreen extends StatefulWidget {
@@ -43,11 +48,42 @@ class _FriendsScreenState extends State<FriendsScreen>
   }
 
   Future<void> _startCall(Map<String, dynamic> friend, CallType type) async {
+    StreamSubscription<CallSession>? statusSub;
     try {
-      await _calls.startCall(friendId: friend['id'] as String, type: type);
+      final session = await _calls.startCall(friendId: friend['id'] as String, type: type);
       if (!mounted) return;
       _toast('${type == CallType.video ? 'Video' : 'Audio'} call request sent. Waiting for ${_name(friend)}…');
+      statusSub = _calls.sessionUpdates(session.id).listen((updated) async {
+        if (updated.status == CallStatus.accepted || updated.status == CallStatus.connecting) {
+          await statusSub?.cancel();
+          try {
+            await _calls.transition(callId: session.id, action: 'connecting');
+            late CallSignalingCoordinator signaling;
+            final controller = WebRtcCallController(
+              sendSignal: (signal) => signaling.send(signal),
+              onRemoteStream: (_) {}, onConnectionState: (_) {},
+            );
+            await controller.initialize(video: type == CallType.video);
+            signaling = CallSignalingCoordinator(repository: _calls, controller: controller,
+              callId: session.id, remoteUserId: session.calleeId);
+            await signaling.startListening();
+            await controller.createOffer();
+            if (!mounted) { await signaling.close(); await controller.close(); return; }
+            Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
+              session: session, peerName: _name(friend), controller: controller,
+              signaling: signaling, onEnd: () => _calls.end(session.id),
+            )));
+          } catch (e) {
+            try { await _calls.transition(callId: session.id, action: 'failed', reason: 'media_setup_failed'); } catch (_) {}
+            if (mounted) _toast('Call connection failed: $e');
+          }
+        } else if (updated.status == CallStatus.declined || updated.status == CallStatus.ended || updated.status == CallStatus.failed || updated.status == CallStatus.missed) {
+          await statusSub?.cancel();
+          if (mounted) _toast('Call ${updated.status.name}');
+        }
+      });
     } catch (e) {
+      await statusSub?.cancel();
       if (mounted) _toast('Call could not start: ${e.toString().replaceFirst('Exception: ', '')}');
     }
   }
