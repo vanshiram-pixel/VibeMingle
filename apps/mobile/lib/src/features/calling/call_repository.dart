@@ -11,6 +11,7 @@ class CallRepository {
 
   final SupabaseClient _db;
   RealtimeChannel? _channel;
+  String? get currentUserId => _db.auth.currentUser?.id;
 
   Future<CallSession> startCall({
     required String friendId,
