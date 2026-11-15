@@ -115,6 +115,37 @@ class CallRepository {
     return controller.stream;
   }
 
+  /// Live incoming ringing sessions addressed to the signed-in user.
+  /// call_sessions is published to Supabase Realtime by migration 0021;
+  /// the callback rechecks callee/status rather than trusting the filter alone.
+  Stream<CallSession> incomingCalls() {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) throw StateError('Sign in before listening for calls');
+    late final RealtimeChannel channel;
+    final controller = StreamController<CallSession>(onCancel: () async {
+      await _db.removeChannel(channel);
+    });
+    channel = _db.channel('incoming-calls-$uid')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'call_sessions',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'callee_id',
+          value: uid,
+        ),
+        callback: (event) {
+          final row = event.newRecord;
+          if (row['callee_id'] == uid && row['status'] == 'ringing' &&
+              !controller.isClosed) {
+            controller.add(CallSession.fromJson(Map<String, dynamic>.from(row)));
+          }
+        },
+      ).subscribe();
+    return controller.stream;
+  }
+
   /// Subscribe to server-authorized call events for this user.
   /// Realtime RLS/channel authorization must restrict events to participants.
   Stream<CallStateEvent> eventsForUser() {
