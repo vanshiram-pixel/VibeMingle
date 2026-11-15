@@ -96,8 +96,8 @@ class _FriendsScreenState extends State<FriendsScreen>
         if (updated.status == CallStatus.accepted || updated.status == CallStatus.connecting) {
           await connectAccepted(updated);
         } else if (updated.status == CallStatus.declined || updated.status == CallStatus.ended || updated.status == CallStatus.failed || updated.status == CallStatus.missed) {
-          await statusSub.cancel();
-          _callSubscriptions.remove(statusSub);
+          await statusSub?.cancel();
+          if (statusSub != null) _callSubscriptions.remove(statusSub);
           if (mounted) _toast('Call ${updated.status.name}');
         }
       });
@@ -109,7 +109,7 @@ class _FriendsScreenState extends State<FriendsScreen>
       if (current.status == CallStatus.accepted || current.status == CallStatus.connecting) {
         await connectAccepted(current);
       } else if (current.status == CallStatus.declined || current.status == CallStatus.ended || current.status == CallStatus.failed || current.status == CallStatus.missed) {
-        await statusSub?.cancel();
+        await statusSub.cancel();
         _callSubscriptions.remove(statusSub);
         if (mounted) _toast('Call ${current.status.name}');
       }
