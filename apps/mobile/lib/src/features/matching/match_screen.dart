@@ -74,7 +74,7 @@ class _MatchScreenState extends State<MatchScreen> {
             const Text('Matching requires verified age eligibility, an available profile, online presence, and explicit consent. Your exact location is never shown.'),
             SwitchListTile(
               value: _consent,
-              onChanged: (v) => setState(() => _consent = v),
+              onChanged: (v) {\n                setState(() => _consent = v);\n                if (!v) _run(_revoke);\n              },
               title: const Text('I consent to stranger matching'),
               subtitle: const Text('You can leave the queue or revoke consent anytime.'),
             ),
