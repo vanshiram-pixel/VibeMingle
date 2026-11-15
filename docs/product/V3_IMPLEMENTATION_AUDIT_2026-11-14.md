@@ -161,3 +161,7 @@ This is a source/repository audit, not a live production or legal certification.
 - Analyzer follow-up: repaired reaction-picker nesting and literal newline artifacts introduced during read-receipt/search edits (`3d1b391e`, `52d2fd61`, `8fe9cca3`). New V3 CI must be green before considering these UI changes validated.
 
 - Reply-to messages: migration `0027_message_replies.sql` adds reply FK and validates same-conversation target in transactional send RPC; Flutter reply composer, quote preview, and reply/report actions implemented (`14ea2d78`, `bcc55bcb`). Repo CI passed; V3 analyzer and DB smoke pending.
+
+
+- Typing indicator (2026-11-15): conversation-scoped Supabase Realtime Broadcast shows peer "Friend is typing…" and sends stop/timeout events; channel cleanup on screen disposal. Commit `a72e01b0`; Repo + V3 CI passed.
+- Private media sharing (2026-11-15): migrations `0028_chat_media_storage.sql` (private 25 MB chat-media bucket and conversation-member/owner Storage policies) and `0029_message_attachments.sql` (metadata table and member/sender RLS); mobile gallery photo/video picker, upload, metadata insertion, signed URL preview. Commits `37218483`, `a60404f7`, `9595c3f0`, `b41ede8c`. V3 CI and DB smoke pending; device/storage-policy validation required. Voice recording/playback not implemented yet.
