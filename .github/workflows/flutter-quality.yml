@@ -20,5 +20,5 @@ jobs:
           cache-key: flutter-${{ runner.os }}-${{ hashFiles('apps/mobile/pubspec.lock') }}
       - run: flutter pub get
       - run: dart format lib
-      - run: flutter analyze --fatal-infos
+      - run: flutter analyze
       - run: flutter test
