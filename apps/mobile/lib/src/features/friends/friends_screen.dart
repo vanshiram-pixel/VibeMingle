@@ -17,7 +17,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
  Future<void> _load() async {
   setState(()=>_loading=true);
   try {final v=await Future.wait([_repo.friends(),_repo.incomingRequests(),_repo.followers(),_repo.following()]);
-   if(mounted)setState(()=>_friends=v[0],_incoming=v[1],_followers=v[2],_following=v[3],_loading=false);
+   if(mounted)setState((){_friends=v[0];_incoming=v[1];_followers=v[2];_following=v[3];_loading=false;});
   } catch(e){if(mounted)setState(()=>_loading=false);_toast('Load error: $e');}
  }
  Future<void> _find(String q) async {
