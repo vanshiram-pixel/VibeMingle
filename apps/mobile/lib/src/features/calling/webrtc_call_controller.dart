@@ -23,6 +23,8 @@ class WebRtcCallController {
   MediaStream? _local;
   MediaStream? _remote;
   bool _closed = false;
+  bool _hasRemoteDescription = false;
+  final List<RTCIceCandidate> _pendingIce = [];
 
   MediaStream? get localStream => _local;
   MediaStream? get remoteStream => _remote;
@@ -72,6 +74,8 @@ class WebRtcCallController {
   Future<void> acceptOffer(String sdp) async {
     final pc = _peer ?? (throw StateError('Initialize media first'));
     await pc.setRemoteDescription(RTCSessionDescription(sdp, 'offer'));
+    _hasRemoteDescription = true;
+    await _flushPendingIce();
     final answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     await sendSignal({'kind': 'answer', 'sdp': answer.sdp});
@@ -80,6 +84,8 @@ class WebRtcCallController {
   Future<void> acceptAnswer(String sdp) async {
     await (_peer ?? (throw StateError('Initialize media first')))
         .setRemoteDescription(RTCSessionDescription(sdp, 'answer'));
+    _hasRemoteDescription = true;
+    await _flushPendingIce();
   }
 
   Future<void> addRemoteIce({
@@ -87,8 +93,20 @@ class WebRtcCallController {
     String? sdpMid,
     int? sdpMLineIndex,
   }) async {
-    await (_peer ?? (throw StateError('Initialize media first')))
-        .addCandidate(RTCIceCandidate(candidate, sdpMid, sdpMLineIndex));
+    final ice = RTCIceCandidate(candidate, sdpMid, sdpMLineIndex);
+    if (!_hasRemoteDescription) {
+      _pendingIce.add(ice);
+      return;
+    }
+    await (_peer ?? (throw StateError('Initialize media first'))).addCandidate(ice);
+  }
+
+  Future<void> _flushPendingIce() async {
+    final pc = _peer ?? (throw StateError('Initialize media first'));
+    for (final candidate in List<RTCIceCandidate>.of(_pendingIce)) {
+      await pc.addCandidate(candidate);
+    }
+    _pendingIce.clear();
   }
 
   Future<void> setMicrophoneMuted(bool muted) async {
@@ -121,5 +139,6 @@ class WebRtcCallController {
     _peer = null;
     _local = null;
     _remote = null;
+    _pendingIce.clear();
   }
 }
