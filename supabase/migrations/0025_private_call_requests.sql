@@ -26,6 +26,7 @@ begin
  if p_recipient is null or p_recipient=v_actor then raise exception using errcode='22023',message='invalid recipient';end if;
  if not exists(select 1 from public.profiles where id=p_recipient) then raise exception using errcode='P0002',message='recipient unavailable';end if;
  if exists(select 1 from public.user_blocks b where (b.blocker_id=v_actor and b.blocked_id=p_recipient) or (b.blocker_id=p_recipient and b.blocked_id=v_actor)) then raise exception using errcode='42501',message='blocked pair';end if;
+ if not exists(select 1 from public.friendships f where f.user_a=least(v_actor,p_recipient) and f.user_b=greatest(v_actor,p_recipient)) then raise exception using errcode='42501',message='friendship required';end if;
  if not exists(select 1 from public.user_consents c where c.user_id=v_actor and c.purpose='age_assurance' and c.granted and c.withdrawn_at is null)
  or not exists(select 1 from public.user_consents c where c.user_id=p_recipient and c.purpose='age_assurance' and c.granted and c.withdrawn_at is null) then raise exception using errcode='42501',message='age assurance required';end if;
  if exists(select 1 from public.call_requests r where r.caller_id=v_actor and r.recipient_id=p_recipient and r.status='pending' and r.expires_at>now()) then raise exception using errcode='23505',message='request already pending';end if;
