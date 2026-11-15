@@ -11,4 +11,12 @@ class FriendRepository {
  Future<void> respond(String id,bool accept) async{await _client.rpc('friend_request_respond',params:{'p_request_id':id,'p_accept':accept});}
  Future<void> removeFriend(String id) async{await _client.rpc('friend_remove',params:{'p_friend_id':id});}
  Future<void> block(String id) async{await _client.rpc('user_block',params:{'p_blocked_id':id});}
+ Future<List<Map<String,dynamic>>> discover({String? query,String? ageBand,String? gender,String? language,String? interest,int limit=20}) async {
+  final r=await _client.rpc('discover_profiles',params:{'p_query':query,'p_age_band':ageBand,'p_gender':gender,'p_language':language,'p_interest':interest,'p_limit':limit});
+  return (r as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList();
+ }
+ Future<void> updateDiscoverable(bool enabled) async {
+  await _client.from('profiles').update({'discoverable':enabled,'updated_profile_at':DateTime.now().toUtc().toIso8601String()}).eq('id',_client.auth.currentUser!.id);
+ }
+
 }
