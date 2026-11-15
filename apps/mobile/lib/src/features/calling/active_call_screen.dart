@@ -42,6 +42,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
   void initState() {
     super.initState();
     unawaited(_prepareRenderers());
+    widget.signaling.onRemoteHangup = _remoteEnded;
     widget.controller.onRemoteStream = (stream) {
       _remoteRenderer.srcObject = stream;
       if (mounted) setState(() {});
@@ -71,10 +72,16 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
     if (mounted) setState(() => _cameraEnabled = next);
   }
 
+  Future<void> _remoteEnded() async {
+    await widget.controller.close();
+    if (mounted) Navigator.of(context).maybePop();
+  }
+
   Future<void> _endCall() async {
     if (_ending) return;
     setState(() => _ending = true);
     try {
+      try { await widget.signaling.send({'kind': 'hangup'}); } catch (_) {}
       await widget.onEnd();
     } finally {
       await widget.signaling.close();
