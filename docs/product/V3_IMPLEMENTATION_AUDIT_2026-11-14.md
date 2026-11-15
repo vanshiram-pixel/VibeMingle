@@ -159,3 +159,5 @@ This is a source/repository audit, not a live production or legal certification.
 - Chat search: added an in-conversation search field filtering loaded message text locally (`68c8729b`). This searches currently loaded conversation history; CI pending.
 
 - Analyzer follow-up: repaired reaction-picker nesting and literal newline artifacts introduced during read-receipt/search edits (`3d1b391e`, `52d2fd61`, `8fe9cca3`). New V3 CI must be green before considering these UI changes validated.
+
+- Reply-to messages: migration `0027_message_replies.sql` adds reply FK and validates same-conversation target in transactional send RPC; Flutter reply composer, quote preview, and reply/report actions implemented (`14ea2d78`, `bcc55bcb`). Repo CI passed; V3 analyzer and DB smoke pending.
