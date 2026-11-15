@@ -157,7 +157,16 @@ class CallRepository {
     return controller.stream;
   }
 
-  /// Recover ringing calls after app launch or a missed realtime INSERT.\n  Future<List<CallSession>> pendingIncomingCalls() async {\n    final uid = _db.auth.currentUser?.id;\n    if (uid == null) throw StateError('Sign in before checking incoming calls');\n    final rows = await _db.from('call_sessions').select()\n      .eq('callee_id', uid).eq('status', 'ringing')\n      .order('created_at', ascending: true).limit(10);\n    return List<Map<String, dynamic>>.from(rows).map(CallSession.fromJson).toList();\n  }\n\n  /// Realtime status changes for one participant-authorized call session.
+  /// Recover ringing calls after app launch or a missed realtime INSERT.
+  Future<List<CallSession>> pendingIncomingCalls() async {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) throw StateError('Sign in before checking incoming calls');
+    final rows = await _db.from('call_sessions').select()
+      .eq('callee_id', uid).eq('status', 'ringing')
+      .order('created_at', ascending: true).limit(10);
+    return List<Map<String, dynamic>>.from(rows).map(CallSession.fromJson).toList();
+  }
+\n  /// Realtime status changes for one participant-authorized call session.
   Stream<CallSession> sessionUpdates(String callId) {
     final uid = _db.auth.currentUser?.id;
     if (uid == null) throw StateError('Sign in before listening for calls');
