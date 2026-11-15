@@ -18,7 +18,7 @@ class CallSignalingCoordinator {
   final WebRtcCallController controller;
   final String callId;
   final String remoteUserId;
-  final Future<void> Function()? onRemoteHangup;
+  Future<void> Function()? onRemoteHangup;
   StreamSubscription<Map<String, dynamic>>? _subscription;
   bool _closed = false;
 
