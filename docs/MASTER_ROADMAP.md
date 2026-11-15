@@ -94,3 +94,8 @@ No V4.1 feature expansion. Engineering fixes, integration and security correctio
 - [Repository Audit & Traceability Baseline](./V4_1_P01_REPOSITORY_AUDIT_AND_TRACEABILITY_BASELINE.md): inventory, code/spec mismatches, route coverage and test evidence gaps.
 - P01 is IN_PROGRESS: GitHub source inspection is documented; local Flutter/SQL/staging/device/CI evidence remains unavailable.
 - Immediate P02 priority: canonical API/schema contracts and E2EE architecture before further chat feature expansion.
+
+
+## V4.1 P02 Contracts baseline
+- [Domain/API/Security Contracts](./V4_1_P02_DOMAIN_API_AND_SECURITY_CONTRACTS.md) defines endpoint families, entities, realtime events, E2EE requirements and acceptance criteria.
+- P02 IN_PROGRESS: baseline written; OpenAPI, ERD, migration reconciliation, cryptographic protocol review and executable contract tests remain.
