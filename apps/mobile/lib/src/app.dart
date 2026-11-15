@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'features/friends/friends_screen.dart';
+import 'features/messaging/messaging_screen.dart';
 
 final _router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
     GoRoute(path: '/friends', builder: (context, state) => const FriendsScreen()),
+    GoRoute(path: '/messages', builder: (context, state) => const MessagingScreen()),
   ],
 );
 
@@ -75,7 +77,7 @@ class HomeScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 24),
               _HomeAction(icon: Icons.people_alt, title: 'Friends', subtitle: 'Find people and manage requests', onTap: () => context.go('/friends')),
-              const _HomeAction(icon: Icons.chat_bubble, title: 'Private Chats', subtitle: 'Your conversations — next integration'),
+              _HomeAction(icon: Icons.chat_bubble, title: 'Private Chats', subtitle: 'Open your messages', onTap: () => context.go('/messages')),
               const _HomeAction(icon: Icons.call, title: 'Calls', subtitle: 'Voice and video calling — next integration'),
             ],
           ),
