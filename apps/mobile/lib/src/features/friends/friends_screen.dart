@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../calling/call_models.dart';
+import '../calling/call_repository.dart';
 import 'friend_repository.dart';
 
 class FriendsScreen extends StatefulWidget {
@@ -10,6 +13,7 @@ class FriendsScreen extends StatefulWidget {
 class _FriendsScreenState extends State<FriendsScreen>
     with SingleTickerProviderStateMixin {
   final _repo = FriendRepository();
+  final _calls = CallRepository(Supabase.instance.client);
   final _search = TextEditingController();
   late final _tabs = TabController(length: 4, vsync: this);
   List<Map<String, dynamic>> _results = [], _friends = [], _incoming = [];
@@ -36,6 +40,16 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   void _toast(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _startCall(Map<String, dynamic> friend, CallType type) async {
+    try {
+      final session = await _calls.startCall(friendId: friend['id'] as String, type: type);
+      if (!mounted) return;
+      _toast('${type == CallType.video ? 'Video' : 'Audio'} call request sent. Waiting for ${_name(friend)}…');
+    } catch (e) {
+      if (mounted) _toast('Call could not start: ${e.toString().replaceFirst('Exception: ', '')}');
+    }
   }
 
   Future<void> _load() async {
@@ -158,7 +172,10 @@ class _FriendsScreenState extends State<FriendsScreen>
                               children: _friends.map((p) => ListTile(
                                 title: Text(_name(p)),
                                 subtitle: Text('@${p['username'] ?? ''}'),
-                                trailing: PopupMenuButton<String>(
+                                trailing: Wrap(spacing: 0, children: [
+                                  IconButton(tooltip: 'Audio call', icon: const Icon(Icons.call), onPressed: () => _startCall(p, CallType.audio)),
+                                  IconButton(tooltip: 'Video call', icon: const Icon(Icons.video_call), onPressed: () => _startCall(p, CallType.video)),
+                                  PopupMenuButton<String>(
                                   onSelected: (v) {
                                     if (v == 'remove') _act(() => _repo.removeFriend(p['id'] as String), 'Friend removed');
                                     if (v == 'block') _act(() => _repo.block(p['id'] as String), 'Blocked');
@@ -167,7 +184,8 @@ class _FriendsScreenState extends State<FriendsScreen>
                                     PopupMenuItem(value: 'remove', child: Text('Remove friend')),
                                     PopupMenuItem(value: 'block', child: Text('Block user')),
                                   ],
-                                ),
+                                  ),
+                                ]),
                               )).toList(),
                             ),
                       _incoming.isEmpty
