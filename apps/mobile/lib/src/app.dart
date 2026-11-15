@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'features/friends/friends_screen.dart';
 
 final _router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
+    GoRoute(path: '/friends', builder: (context, state) => const FriendsScreen()),
   ],
 );
 
@@ -72,7 +74,7 @@ class HomeScreen extends StatelessWidget {
               Text(user.email ?? 'VibeMingle user', textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 24),
-              const _HomeAction(icon: Icons.people_alt, title: 'Friends', subtitle: 'Friend list and requests — next integration'),
+              _HomeAction(icon: Icons.people_alt, title: 'Friends', subtitle: 'Find people and manage requests', onTap: () => context.go('/friends')),
               const _HomeAction(icon: Icons.chat_bubble, title: 'Private Chats', subtitle: 'Your conversations — next integration'),
               const _HomeAction(icon: Icons.call, title: 'Calls', subtitle: 'Voice and video calling — next integration'),
             ],
@@ -84,13 +86,14 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _HomeAction extends StatelessWidget {
-  const _HomeAction({required this.icon, required this.title, required this.subtitle});
+  const _HomeAction({required this.icon, required this.title, required this.subtitle, this.onTap});
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => Card(
-    child: ListTile(leading: Icon(icon), title: Text(title), subtitle: Text(subtitle),
+    child: ListTile(onTap: onTap, leading: Icon(icon), title: Text(title), subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right)),
   );
 }
