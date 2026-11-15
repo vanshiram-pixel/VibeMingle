@@ -24,7 +24,7 @@ class MatchQueueRepository {
   return await _client.rpc('match_session_end',params:{'p_session_id':sessionId,'p_reason':reason}) as bool;
  }
 
- /// Participant-scoped realtime stream. RLS is the authorization boundary.
+ /// Listen to only this authenticated user's server-generated match events.\n Stream<Map<String,dynamic>> matchEvents() {\n  final uid=_client.auth.currentUser?.id;\n  if(uid==null)throw StateError('Match events require authentication');\n  return _client.from('match_session_events').stream(primaryKey:['id'])\n    .eq('recipient_id',uid).map((rows)=>rows.map((row)=>Map<String,dynamic>.from(row)).toList())\n    .expand((rows)=>rows).map((row)=>row);\n }\n\n /// Participant-scoped realtime stream. RLS is the authorization boundary.
  Stream<List<Map<String,dynamic>>> sessionChanges(String sessionId) =>
   _client.from('match_sessions').stream(primaryKey:['id']).eq('id',sessionId);
 }
