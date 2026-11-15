@@ -165,3 +165,7 @@ This is a source/repository audit, not a live production or legal certification.
 
 - Typing indicator (2026-11-15): conversation-scoped Supabase Realtime Broadcast shows peer "Friend is typing…" and sends stop/timeout events; channel cleanup on screen disposal. Commit `a72e01b0`; Repo + V3 CI passed.
 - Private media sharing (2026-11-15): migrations `0028_chat_media_storage.sql` (private 25 MB chat-media bucket and conversation-member/owner Storage policies) and `0029_message_attachments.sql` (metadata table and member/sender RLS); mobile gallery photo/video picker, upload, metadata insertion, signed URL preview. Commits `37218483`, `a60404f7`, `9595c3f0`, `b41ede8c`. V3 CI and DB smoke pending; device/storage-policy validation required. Voice recording/playback not implemented yet.
+
+
+- Reply/media SQL smoke correction (2026-11-15): migration `0027_message_replies.sql` had a literal escaped newline before its replacement `message_send` function; normalized to an actual newline. The earlier DB smoke failure was migration parsing at 0027 (not 0028/0029), so rerun local DB smoke after correction.
+- Chat video playback UX added (2026-11-15): `video_player` dependency and a dedicated in-app network video viewer with play/pause controls for signed attachment URLs. CI/analyzer and Android playback verification pending; audio attachments remain display-only.
