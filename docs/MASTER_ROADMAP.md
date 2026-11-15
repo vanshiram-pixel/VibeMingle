@@ -153,3 +153,9 @@ Screen-by-screen user journeys, every page/button/popup behavior, V1/V2/V3 scope
 - Matching modes: Instant Random, Next/Random Switch, Manual Stranger Search with adult-only gender/age/language preferences; one shared server matchmaking engine; filters never silently bypassed.
 - Profile intro video is preview only; explicit private call request and receiver acceptance required.
 - V4 is product scope lock. Actual implementation/integration/verification status must remain evidence-based; production release needs user approval.
+
+
+## V4.1 — Complete Product Review & Launch Focus Lock
+- Full screen/page/control/logic/admin/backend and launch sequence review: [V4_COMPLETE_PRODUCT_REVIEW_AND_LAUNCH_LOCK.md](./V4_COMPLETE_PRODUCT_REVIEW_AND_LAUNCH_LOCK.md).
+- Launch focus is P0 Core vertical slices; V2/V3 features remain preserved but must not distract from Core implementation, integration, testing and launch readiness.
+- No dead/fake buttons, fake match/call/payment/translation; evidence-based status; deployment/store/public launch only after user approval.
