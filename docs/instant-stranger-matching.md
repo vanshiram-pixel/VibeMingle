@@ -1,41 +1,82 @@
-# Instant Stranger Video Matching — Product & Engineering Spec
+# VibeMingle Stranger Match — Product, UX & Wiring Specification
 
-Status: SPECIFIED (design only; not implemented or runtime-verified)
-Scope: VibeMingle V1 basic stranger matching + video handoff. Advanced ranking remains V2.
+Status: PRODUCT SPEC LOCKED / implementation pending (unless verified by phase evidence)
+Scope: V1 matching + integrated video/chat/translation experience; V2/V3 enhancements below.
 
-## User journey (locked from product clarification)
-1. Two authenticated, age-eligible strangers independently tap **Start Stranger Matching**.
-2. The matchmaking service pairs two eligible users atomically. If a compatible waiting peer already exists, target match-to-call activation is under 1 second (best-effort target, dependent on network, signaling and media permissions—not a guarantee).
-3. Both clients receive the same match/session ID and enter the video-call screen automatically; neither user should have to accept a second confusing prompt after opting into matching. Camera/mic permissions and a clear stop/cancel control are required.
-4. A newly matched pair has a **mandatory 15-second minimum interaction window**. Next/Skip is disabled for both during this window. This is a product floor, not a forced speaking/consent requirement: users can mute, turn camera off, or end/report/block immediately for safety. Safety exit always overrides the timer.
-5. At/after 15 seconds, either participant may tap **Next Stranger**. The current pair is closed for that user; the other participant is safely returned to matching/available state only if they opted to continue. No ghost call or double assignment.
-6. Next starts a fresh matchmaking attempt. Target: find the next distinct stranger promptly; the system may search/queue for up to **60–70 seconds** before showing a clear no-match/retry state. Do not promise two successful stranger connections in every 60–70-second interval; pool size, eligibility, network and consent determine availability. Avoid immediate rematching with the same person.
-7. End/Stop Matching exits the queue and call cleanly.
+## Product contract (do not reinterpret)
+- User taps **Start Matching** → server queues and pairs eligible strangers automatically; both clients move to the same call session without a second accept prompt.
+- Pairing target: under 1 second when an eligible peer is already waiting (measured target, not a network/pool guarantee).
+- **Next Stranger** target: 1–2 seconds when another eligible peer is waiting. Never use a 60–70-second rematch delay.
+- If no peer exists, keep searching with clear live status and Cancel/Stop; no fake match and no arbitrary fixed timeout.
+- Every fresh pair has a 15-second minimum before Next becomes enabled. This is a skip cooldown, NOT forced participation: End, Report, Block, mute and camera-off remain available immediately.
+- V1/V2/V3 are scope tiers. Core UI, contracts and integration must not be discarded or replaced with isolated incomplete demos.
 
-## Matching rules
-- Eligible: authenticated, age-gate passed, consented to stranger matching, online heartbeat fresh, not already in a call/match, not blocked in either direction, not banned/suspended, permissions/device readiness handled.
-- One active match per user; enforce with database constraints/atomic transaction or server-side lock, not client-only checks.
-- Pairing must be atomic and idempotent; retries cannot create duplicate sessions.
-- Exclude recently seen/skipped pairs for a configurable cooldown; fairness should avoid repeatedly selecting the same available users.
-- Respect user-set hard filters only where supported and consented; V1 should use safe basic eligibility, advanced ranking/preferences are V2.
-- Queue state transitions: idle → searching → reserved → connecting → active (15-second floor) → next/end → idle/searching. Include expired, canceled, failed and safety-terminated outcomes.
-- Match events are server-authoritative; clients cannot nominate arbitrary user IDs or forge a match.
-- Presence heartbeat + TTL and server events/WebSocket/Realtime drive availability. One-second client polling is fallback/visual refresh only; do not run heavyweight SQL matchmaking every second.
-- Keep camera/mic media peer-to-peer via WebRTC where possible; signaling and TURN credentials are authenticated and short-lived.
+## Matching lifecycle and server rules
+State machine: idle → searching → reserved → connecting → active → next/end; terminal outcomes include canceled, expired, failed, blocked and safety-ended.
+- Eligibility: authenticated, age gate passed, explicit stranger-match consent, fresh presence heartbeat, not busy/in another session, not suspended/banned, device permission flow handled.
+- Server-authoritative atomic reservation/pairing; one active session per user; idempotent retries; no client-supplied arbitrary peer IDs.
+- Check blocks in both directions, reports/safety restrictions, recent pair/skip cooldown, duplicate sessions, stale queue entries and fairness.
+- Next closes current session correctly for both participants. Other user returns to search only if their intent remains active; otherwise idle. Never ghost sessions or silently opt a user back in.
+- Queue/event delivery via authenticated Realtime/WebSocket/server events + heartbeat/TTL. Polling is fallback UI refresh only, not expensive matchmaking SQL every second.
+- Match events carry opaque session IDs and authorized participants; client validates state and ignores stale/out-of-order events.
+- Rate-limit Start/Next, prevent bots/rapid cycling, log moderation/session metadata without recording call media by default.
 
-## UX & safety
-- Visible Searching timer/status; target next-stranger rematch ≤1–2 sec when a compatible peer is waiting; if the pool is empty, continue searching and let the user cancel (no fixed 60–70 sec timeout).
-- 15-second countdown indicator and disabled Next button; explain why.
-- Safety controls always active: end call, report, block, camera off, mic mute. These override the minimum window instantly.
-- After Next, show a brief connecting state; do not expose personal phone/email/location.
-- Rate-limit matching/Next, detect automated abuse, and provide moderation/audit events without storing call content by default.
-- Never match users who have blocked/reported each other or whose safety restrictions conflict.
+## Match card / versioned experience
+### V1 — Reliable launch core
+- One clear Start Matching action; searching animation/status; matched state; call opens automatically.
+- Video-first screen: remote video fills main stage; local camera preview is movable/resizable; controls remain reachable and safe-area aware.
+- Compact **live text chat beneath video** (or collapsible bottom sheet on small screens); chat never covers faces/critical call controls. Keyboard opens chat sheet and video adapts without losing call.
+- Controls: mic mute, camera on/off, flip camera, speaker, chat toggle, Next (disabled until 15s), End, Report, Block. Safety actions always active.
+- 15-second visible countdown/lock explanation; next-match connecting/searching state; clear cancel.
+- Basic captions/translation entry point is a UI contract; gracefully show unavailable until translation is enabled—never fake translated output.
+### V2 — Smart matching & communication
+- Matching preferences/ranking: language, country/region, interests and optional filters; respect consent, fairness and safe defaults.
+- Live voice translation: detect each speaker's language, transcribe speech, translate to receiver's chosen language, display aligned subtitles and (where supported) translated audio playback. User controls: enable/disable, target language, original/translated audio, captions, mute translated voice.
+- Text chat synchronized with active call; translated text inline or explicit translate action. Preserve original text and label translations.
+- AI safety/moderation triage, match quality feedback, analytics and anti-abuse signals with human review.
+### V3 — Global/personalized
+- Global language/country routing, adaptive match ranking and privacy-safe personalization.
+- Scalable multi-region queue/media orchestration, advanced accessibility and localization.
+- Creator/social economy integrations only with trust, safety, policy and abuse controls.
 
-## Performance targets (acceptance, not claims)
-- When a compatible peer is already queued: server pairing event p95 target ≤1 sec; measure separately from media connection time.
-- Next/rematch latency target: ≤1–2 sec with an eligible waiting peer. Empty-pool wait is open-ended with visible searching status and user cancel.
-- Test concurrency/races, stale presence, simultaneous Next, network loss, permission denial, TURN fallback, and safety exits.
-- Validate with at least two real accounts/devices and load tests before claiming production behavior.
+## Video + chat + translation layout rules
+- Hierarchy: remote video (largest) → local preview (overlay corner, draggable) → call toolbar → expandable chat/translation drawer.
+- Portrait phones: video uses upper area; bottom chat drawer peek (latest messages) or expand. Chat input stays below video when space allows; otherwise bottom sheet overlays only lower region and video resizes/crops safely.
+- Landscape/tablet/web: video and chat can use side-by-side split; user can switch layout. Handle text alignment, RTL/LTR, long messages, timestamps, subtitle placement, keyboard/insets and accessibility scaling.
+- Never place subtitles over eyes/mouth or critical controls; offer subtitle position/background/size. Avoid duplicate original+translation unless selected.
+- Chat input/send, scrolling, new-message indicator, delivery errors and call state integrated; drafts survive layout changes.
+- Low bandwidth: adaptive video quality, reduce nonessential animation, preserve chat/voice state and show reconnect status.
 
-## Open implementation dependencies
-Auth/age/consent, presence lifecycle, block/report enforcement, call signaling/WebRTC/TURN, notification/deep-link behavior, staging environment and automated tests.
+## Voice translation pipeline (wired contract)
+1. Capture speaker audio locally with explicit microphone permission and user consent.
+2. Send securely to approved speech service (or supported on-device path); provider keys never in client.
+3. Speech-to-text + language detection → receiver-language translation → subtitle event with speaker/session/sequence/timestamp.
+4. Optional translated speech synthesis/audio channel, controlled by receiver; original audio remains selectable fallback.
+5. Handle latency, partial/final transcripts, duplicate/out-of-order chunks, reconnect, quota/errors, unsupported language and privacy deletion.
+6. Translation is opt-in, visibly indicated, disableable per call; disclose processing/retention before enabling. Never claim translation works until credentials, server pipeline and E2E tests are complete.
+
+## Security / privacy / safety gates
+- Age gate, consent and privacy settings before queue entry; no minors in adult stranger-video flows.
+- End/report/block override 15-second lock. Block/report immediately prevents future chat/call/match both ways and creates authorized moderation record.
+- No personal phone/email/address exposure. Authenticated signaling and short-lived TURN credentials; secure transport and RLS.
+- Camera/mic indicators, permission denial fallback, clear stop/search cancellation, reconnect handling, abuse limits and audit trail.
+- Store necessary match/session metadata only; never record audio/video by default. Translation retention/deletion disclosed/configurable.
+
+## Events and API contract (implementation checklist)
+Client intents: match.start, match.cancel, match.next, call.end, safety.report, safety.block, translation.setPreferences, chat.send.
+Server events: match.queued, match.reserved, match.connected, match.ended, match.searching, match.error; call signaling; chat message events; translation.transcript.partial/final and translation.error.
+Every event includes session/match ID, authorization, sequence/version and timestamp; retries idempotent.
+Match service hands the same authorized session to call lifecycle; video UI, chat and translation share session identity—not independent parallel sessions.
+Admin-configurable 15s floor may be increased only after product/safety review; immediate safety exits cannot be disabled.
+
+## Acceptance / test matrix
+- Queue with waiting peer: pairing event p95 ≤1s target; Next with waiting peer ≤1–2s target.
+- Empty queue: persistent search + cancel, no false success.
+- Two devices: auto call handoff, audio/video, chat beneath video, keyboard/insets, translation subtitles and controls.
+- Race tests: simultaneous Start/Next, repeated taps, stale presence, disconnect/reconnect, same-pair exclusion, blocked/reported users, cancel while reserved, one side ends.
+- Safety: End/Report/Block during 15s; timer never traps user; block prevents future matching/chat/call.
+- Translation: Hindi↔English and supported languages, partial/final ordering, latency/error/quota, opt-out, original audio fallback, privacy.
+- Verify Flutter widget/integration tests, SQL/RLS tests, two-account/device staging and performance measurements before VERIFIED.
+
+## Delivery dependencies
+Auth + age/consent + profile + presence + block/report → atomic queue/match RPC → authenticated signaling + WebRTC/TURN → integrated video/chat UI → translation backend/provider → admin/moderation → QA/staging. A spec, UI mock, migration or scaffold alone is not completion.
