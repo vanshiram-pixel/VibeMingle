@@ -80,3 +80,7 @@ Admin-configurable 15s floor may be increased only after product/safety review; 
 
 ## Delivery dependencies
 Auth + age/consent + profile + presence + block/report → atomic queue/match RPC → authenticated signaling + WebRTC/TURN → integrated video/chat UI → translation backend/provider → admin/moderation → QA/staging. A spec, UI mock, migration or scaffold alone is not completion.
+
+
+## Match-to-friend transition (locked)
+For Add Friend/Follow/Post-Match and private-call eligibility after a match, follow [STRANGER_MATCH_FRIEND_FLOW.md](STRANGER_MATCH_FRIEND_FLOW.md): request → recipient Accept → friendship; Follow independent; same conversation reused; private call requires a new request and receiver Accept; no former-match direct call/rejoin; Block overrides all paths. Specification only; implementation/runtime verification pending.
