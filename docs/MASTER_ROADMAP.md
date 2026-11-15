@@ -130,3 +130,7 @@ J. AI/monetization V2; global V3; QA/release gates.
 
 ## Definition of complete
 Each feature: design/schema → implementation → integration → unit/widget/SQL tests → security checks → staging E2E → acceptance evidence → docs. Only then mark VERIFIED. Launch: all V1 gates green, operational admin and rollback ready, store/web release reviewed with user.
+
+
+## Canonical detailed product blueprint
+Screen-by-screen user journeys, every page/button/popup behavior, V1/V2/V3 scope, Admin/Ops screens, backend wiring, event/state contracts, safety, testing and launch gates are consolidated in [FINAL_MASTER_PRODUCT_BLUEPRINT.md](./FINAL_MASTER_PRODUCT_BLUEPRINT.md). This is the detailed product contract; this roadmap remains the execution/status tracker. Matching/video/chat/translation decisions are also in [instant-stranger-matching.md](./instant-stranger-matching.md).
