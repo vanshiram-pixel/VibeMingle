@@ -34,6 +34,8 @@ returns jsonb language plpgsql security definer set search_path=public,pg_temp a
 declare v_uid uuid:=auth.uid(); v_peer uuid; v_session uuid; v_now timestamptz:=clock_timestamp();
 begin
  if v_uid is null then raise exception 'authentication_required'; end if;
+ if not exists(select 1 from public.match_user_consent c where c.user_id=v_uid and c.enabled=true) then raise exception 'match_consent_required'; end if;
+ if not exists(select 1 from public.match_eligibility e where e.user_id=v_uid and e.age_verified=true) then raise exception 'match_eligibility_required'; end if;
  if p_mode not in ('random','manual','next') then raise exception 'invalid_match_mode'; end if;
  if not exists(select 1 from public.profiles p where p.id=v_uid and p.discoverable=true) then raise exception 'profile_not_discoverable'; end if;
  if exists(select 1 from public.user_presence pr where pr.user_id=v_uid and pr.state='online' and pr.updated_at>v_now-interval '90 seconds') is false then raise exception 'presence_required'; end if;
