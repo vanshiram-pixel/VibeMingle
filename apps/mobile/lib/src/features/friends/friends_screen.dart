@@ -98,7 +98,7 @@ class _FriendsScreenState extends State<FriendsScreen>
           if (mounted) _toast('Call ${updated.status.name}');
         }
       });
-      _callSubscriptions.add(statusSub!);
+      _callSubscriptions.add(statusSub);
 
       // Reconcile current server state after subscribing so a fast accept
       // between call_start and realtime subscription cannot be missed.
