@@ -65,6 +65,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       IconButton(icon:const Icon(Icons.close),onPressed:()=>_act(()=>_repo.respond(r['id'] as String,false),'Rejected'))
      ]))).toList()),
     _profiles(_followers),_profiles(_following,allowUnfollow:true)
-   ])))
+   ]))
   ]));
 }
