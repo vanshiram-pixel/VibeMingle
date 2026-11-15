@@ -245,6 +245,33 @@ class _ConversationScreenState extends State<ConversationScreen> {
     );
   }
 
+  Future<void> _toggleVoiceRecording() async {
+    if (_sending) return;
+    if (!_recordingVoice) {
+      try {
+        if (!await _voiceRecorder.hasPermission()) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Microphone permission जरूरी है'))); return; }
+        final path = '${Directory.systemTemp.path}/vibe_voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        await _voiceRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 64000, sampleRate: 44100, numChannels: 1), path: path);
+        if (mounted) setState(() => _recordingVoice = true);
+      } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Recording शुरू नहीं हुई: $e'))); }
+      return;
+    }
+    setState(() { _recordingVoice = false; _sending = true; });
+    try {
+      final path = await _voiceRecorder.stop();
+      if (path == null) throw Exception('रिकॉर्डिंग खाली है');
+      final file = File(path); final size = await file.length();
+      if (size == 0 || size > 25 * 1024 * 1024) throw Exception('Voice file size invalid');
+      final uid = _db.auth.currentUser!.id; final name = 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final storagePath = '${widget.conversationId}/$uid/$name';
+      await _db.storage.from('chat-media').upload(storagePath, file, fileOptions: const FileOptions(contentType: 'audio/m4a'));
+      final message = await _db.rpc('message_send', params: {'p_conversation': widget.conversationId, 'p_body': '🎙️ Voice message'});
+      await _db.from('message_attachments').insert({'message_id': message['id'], 'conversation_id': widget.conversationId, 'uploader_id': uid, 'storage_path': storagePath, 'file_name': name, 'mime_type': 'audio/m4a', 'byte_size': size, 'media_kind': 'audio'});
+      await _load();
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Voice भेज नहीं पाए: $e'))); }
+    finally { if (mounted) setState(() => _sending = false); }
+  }
+
   Future<void> _pickAndSendMedia(bool video) async {
     if (_sending) return;
     final picked = video ? await _picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 2)) : await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
@@ -443,7 +470,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                             maxLines: 2, overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 12)),
                         ),
-                        if (message['message_attachments'] is List && (message['message_attachments'] as List).isNotEmpty) ...((message['message_attachments'] as List).map((raw) { final a = Map<String,dynamic>.from(raw as Map); final url = _attachmentUrls[a['id'].toString()]; return Padding(padding: const EdgeInsets.only(bottom: 5), child: url == null ? const Text('Attachment loading…') : a['media_kind']=='image' ? Image.network(url, width: 220, fit: BoxFit.cover) : InkWell(onTap: a['media_kind']=='video' ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _ChatVideoPlayer(url: url, title: a['file_name'].toString()))) : null, child: Row(children: [Icon(a['media_kind']=='video' ? Icons.play_circle : Icons.audiotrack), Flexible(child: Text(a['file_name'].toString()))]))); })),
+                        if (message['message_attachments'] is List && (message['message_attachments'] as List).isNotEmpty) ...((message['message_attachments'] as List).map((raw) { final a = Map<String,dynamic>.from(raw as Map); final url = _attachmentUrls[a['id'].toString()]; return Padding(padding: const EdgeInsets.only(bottom: 5), child: url == null ? const Text('Attachment loading…') : a['media_kind']=='image' ? Image.network(url, width: 220, fit: BoxFit.cover) : InkWell(onTap: a['media_kind']=='video' ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _ChatVideoPlayer(url: url, title: a['file_name'].toString()))) : a['media_kind']=='audio' ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _ChatAudioPlayer(url: url, title: a['file_name'].toString()))) : null, child: Row(children: [Icon(a['media_kind']=='video' ? Icons.play_circle : a['media_kind']=='audio' ? Icons.play_circle_fill : Icons.audiotrack), Flexible(child: Text(a['file_name'].toString()))]))); })),
                         Text(message['deleted_at'] != null ? 'Message deleted' :
                           message['body'].toString()),
                         if (message['deleted_at'] == null) ...[
@@ -487,6 +514,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           child: Row(children: [
             IconButton(onPressed: () => _pickAndSendMedia(false), tooltip: 'Photo', icon: const Icon(Icons.image)),
             IconButton(onPressed: () => _pickAndSendMedia(true), tooltip: 'Video', icon: const Icon(Icons.video_library)),
+            IconButton(onPressed: _toggleVoiceRecording, tooltip: _recordingVoice ? 'Stop and send voice' : 'Record voice', icon: Icon(_recordingVoice ? Icons.stop_circle : Icons.mic)),
             IconButton(onPressed: _showEmojiPicker, tooltip: 'Emoji',
               icon: const Icon(Icons.emoji_emotions_outlined)),
             Expanded(child: TextField(controller: _input, onChanged: _broadcastTyping, minLines: 1, maxLines: 4,
@@ -515,4 +543,15 @@ class _ChatVideoPlayerState extends State<_ChatVideoPlayer> {
   void dispose() { _controller.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(widget.title)), body: Center(child: _controller.value.isInitialized ? AspectRatio(aspectRatio: _controller.value.aspectRatio, child: Stack(alignment: Alignment.center, children: [VideoPlayer(_controller), IconButton(iconSize: 64, color: Colors.white, icon: Icon(_controller.value.isPlaying ? Icons.pause_circle : Icons.play_circle), onPressed: () { setState(() { _controller.value.isPlaying ? _controller.pause() : _controller.play(); }); })])) : const CircularProgressIndicator()));
+}
+
+
+class _ChatAudioPlayer extends StatefulWidget {
+  const _ChatAudioPlayer({required this.url, required this.title}); final String url; final String title;
+  @override State<_ChatAudioPlayer> createState() => _ChatAudioPlayerState();
+}
+class _ChatAudioPlayerState extends State<_ChatAudioPlayer> {
+  final AudioPlayer _player = AudioPlayer(); bool _playing = false;
+  @override void dispose() { _player.dispose(); super.dispose(); }
+  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(widget.title)), body: Center(child: StreamBuilder<PlayerState>(stream: _player.onPlayerStateChanged, builder: (context, snapshot) { final playing = snapshot.data == PlayerState.playing; return IconButton(iconSize: 72, icon: Icon(playing ? Icons.pause_circle : Icons.play_circle), onPressed: () async { if (playing) await _player.pause(); else await _player.play(UrlSource(widget.url)); setState(() => _playing = !playing); }); })));
 }
