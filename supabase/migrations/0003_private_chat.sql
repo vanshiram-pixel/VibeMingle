@@ -1,7 +1,7 @@
 -- VibeMingle private chat message foundation
 create table if not exists public.chat_messages (
  id uuid primary key default gen_random_uuid(),
- conversation_id uuid not null,
+ conversation_id text not null,
  sender_id uuid not null references auth.users(id) on delete cascade,
  recipient_id uuid not null references auth.users(id) on delete cascade,
  body text not null check (char_length(body) between 1 and 4000),
@@ -30,9 +30,9 @@ create policy chat_messages_no_direct_update on public.chat_messages for update 
 drop policy if exists chat_messages_no_direct_delete on public.chat_messages;
 create policy chat_messages_no_direct_delete on public.chat_messages for delete to authenticated using(false);
 
-create or replace function public.chat_send(p_recipient_id uuid,p_body text,p_conversation_id uuid default null)
+create or replace function public.chat_send(p_recipient_id uuid,p_body text,p_conversation_id text default null)
 returns public.chat_messages language plpgsql security definer set search_path=public,pg_temp as $$
-declare v_message public.chat_messages; v_conversation uuid;
+declare v_message public.chat_messages; v_conversation text;
 begin
  if auth.uid() is null then raise exception 'authentication_required'; end if;
  if p_recipient_id is null or p_recipient_id=auth.uid() then raise exception 'invalid_recipient'; end if;
@@ -43,7 +43,7 @@ begin
  if not exists(select 1 from public.friendships f where
    f.user_low=least(auth.uid(),p_recipient_id) and f.user_high=greatest(auth.uid(),p_recipient_id)) then
    raise exception 'friends_only'; end if;
- v_conversation:=coalesce(p_conversation_id,least(auth.uid(),p_recipient_id)::text||':'||greatest(auth.uid(),p_recipient_id)::text)::uuid;
+ v_conversation:=coalesce(p_conversation_id,least(auth.uid(),p_recipient_id)::text||':'||greatest(auth.uid(),p_recipient_id)::text);
  insert into public.chat_messages(conversation_id,sender_id,recipient_id,body)
  values(v_conversation,auth.uid(),p_recipient_id,trim(p_body)) returning * into v_message;
  return v_message;
