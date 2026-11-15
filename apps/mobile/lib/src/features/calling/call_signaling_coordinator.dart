@@ -55,9 +55,11 @@ class CallSignalingCoordinator {
         case 'offer':
           final sdp = payload['sdp'];
           if (sdp is String && sdp.isNotEmpty) await controller.acceptOffer(sdp);
+          break;
         case 'answer':
           final sdp = payload['sdp'];
           if (sdp is String && sdp.isNotEmpty) await controller.acceptAnswer(sdp);
+          break;
         case 'ice':
           final candidate = payload['candidate'];
           if (candidate is String && candidate.isNotEmpty) {
@@ -67,8 +69,10 @@ class CallSignalingCoordinator {
               sdpMLineIndex: (payload['sdpMLineIndex'] as num?)?.toInt(),
             );
           }
+          break;
         case 'hangup':
           await close();
+          break;
         default:
           break;
       }
