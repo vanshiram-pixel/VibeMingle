@@ -50,11 +50,17 @@ language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
-declare v_call public.call_sessions;
+declare v_call public.call_sessions; v_uid uuid:=auth.uid(); v_first text; v_second text;
 begin
-  if auth.uid() is null then raise exception 'authentication_required'; end if;
-  if p_callee_id is null or p_callee_id = auth.uid() then raise exception 'invalid_recipient'; end if;
+  if v_uid is null then raise exception 'authentication_required'; end if;
+  if p_callee_id is null or p_callee_id = v_uid then raise exception 'invalid_recipient'; end if;
   if p_call_type not in ('audio','video') then raise exception 'invalid_call_type'; end if;
+
+  -- Lock both participant identities in a deterministic order. This prevents
+  -- concurrent call_start requests from creating overlapping active calls.
+  v_first:=least(v_uid::text,p_callee_id::text); v_second:=greatest(v_uid::text,p_callee_id::text);
+  perform pg_advisory_xact_lock(hashtextextended(v_first,0));
+  perform pg_advisory_xact_lock(hashtextextended(v_second,0));
 
   -- Prevent duplicate active calls involving either participant.
   if exists (
@@ -65,7 +71,7 @@ begin
   ) then raise exception 'participant_busy'; end if;
 
   insert into public.call_sessions(caller_id,callee_id,call_type,status)
-  values(auth.uid(),p_callee_id,p_call_type,'ringing')
+  values(v_uid,p_callee_id,p_call_type,'ringing')
   returning * into v_call;
   return v_call;
 end;
