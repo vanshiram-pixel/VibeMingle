@@ -130,3 +130,6 @@ This is a source/repository audit, not a live production or legal certification.
 
 
 - Messaging conversation list UX increment (2026-11-15): list now sorts by conversation `updated_at` newest-first and surfaces an unread indicator when conversation activity is newer than member `last_read_at`. Commit `58a6f1f7`; awaiting CI. Unread is based on conversation activity timestamp (not per-message delivery receipts).
+
+
+- CI correction (2026-11-15): conversation list sorting patch initially contained escaped `\\n` text, causing Flutter analyze failure on commit `88eac142` (V3 CI failed). Corrected to real line breaks in `6cb27400`; re-run CI before considering this UX change verified.
