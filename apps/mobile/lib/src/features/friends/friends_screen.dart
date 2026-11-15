@@ -73,7 +73,6 @@ class _FriendsScreenState extends State<FriendsScreen>
               session: session, peerName: _name(friend), controller: controller,
               signaling: signaling, onEnd: () => _calls.end(session.id),
               onConnected: () async { await _calls.transition(callId: session.id, action: 'connected'); },
-              onConnected: () => _calls.transition(callId: session.id, action: 'connected').then((_) {}),
             )));
           } catch (e) {
             try { await _calls.transition(callId: session.id, action: 'failed', reason: 'media_setup_failed'); } catch (_) {}
