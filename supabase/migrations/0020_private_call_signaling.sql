@@ -46,7 +46,7 @@ create policy call_signals_no_delete on public.call_signals for delete to authen
 do $$
 begin
  if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='call_signals') then
-  alter publication supabase_realtime add table public.call_signals;
+  execute 'alter publication supabase_realtime add table public.call_signals';
  end if;
 exception when undefined_object then
  raise notice 'supabase_realtime publication not present; enable realtime publication before applying this migration';
