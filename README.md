@@ -17,3 +17,5 @@ V1/V2/V3 remain preserved scope tiers. V4 consolidates their hard locks and acce
 Work on feature branches and keep production deployment/store launch behind explicit user approval. No mock/fake completion should be represented as production functionality.
 
 - [V4 Complete Product Review & Launch Lock](docs/V4_COMPLETE_PRODUCT_REVIEW_AND_LAUNCH_LOCK.md) — screen-by-screen, action-by-action, web/admin/backend and launch sequence.
+
+- [V4 25-Phase Development & Launch Master Plan](docs/V4_25_PHASE_FINAL_DEVELOPMENT_MASTER_PLAN.md) — complete phase order, services, deliverables and exit criteria.
