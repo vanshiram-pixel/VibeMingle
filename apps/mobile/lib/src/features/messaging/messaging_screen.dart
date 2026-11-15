@@ -429,6 +429,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     _typingChannel?.unsubscribe();
     _input.dispose();
     _search.dispose();
+    _voiceRecorder.dispose();
     if (_channel != null) _db.removeChannel(_channel!);
     super.dispose();
   }
