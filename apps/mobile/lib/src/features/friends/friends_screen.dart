@@ -24,6 +24,7 @@ class _FriendsScreenState extends State<FriendsScreen>
   List<Map<String, dynamic>> _results = [], _friends = [], _incoming = [];
   List<Map<String, dynamic>> _followers = [], _following = [];
   bool _loading = true, _searching = false;
+  final Set<StreamSubscription<CallSession>> _callSubscriptions = {};
 
   @override
   void initState() {
@@ -33,6 +34,10 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   @override
   void dispose() {
+    for (final subscription in _callSubscriptions) {
+      subscription.cancel();
+    }
+    _callSubscriptions.clear();
     _search.dispose();
     _tabs.dispose();
     super.dispose();
@@ -59,6 +64,7 @@ class _FriendsScreenState extends State<FriendsScreen>
         if (connecting || !mounted) return;
         connecting = true;
         await statusSub?.cancel();
+        if (statusSub != null) _callSubscriptions.remove(statusSub);
         try {
           await _calls.transition(callId: session.id, action: 'connecting');
           late CallSignalingCoordinator signaling;
@@ -88,9 +94,11 @@ class _FriendsScreenState extends State<FriendsScreen>
           await connectAccepted(updated);
         } else if (updated.status == CallStatus.declined || updated.status == CallStatus.ended || updated.status == CallStatus.failed || updated.status == CallStatus.missed) {
           await statusSub?.cancel();
+          if (statusSub != null) _callSubscriptions.remove(statusSub);
           if (mounted) _toast('Call ${updated.status.name}');
         }
       });
+      _callSubscriptions.add(statusSub!);
 
       // Reconcile current server state after subscribing so a fast accept
       // between call_start and realtime subscription cannot be missed.
@@ -99,10 +107,12 @@ class _FriendsScreenState extends State<FriendsScreen>
         await connectAccepted(current);
       } else if (current.status == CallStatus.declined || current.status == CallStatus.ended || current.status == CallStatus.failed || current.status == CallStatus.missed) {
         await statusSub.cancel();
+        _callSubscriptions.remove(statusSub);
         if (mounted) _toast('Call ${current.status.name}');
       }
     } catch (e) {
       await statusSub?.cancel();
+      if (statusSub != null) _callSubscriptions.remove(statusSub);
       if (mounted) _toast('Call could not start: ${e.toString().replaceFirst('Exception: ', '')}');
     }
   }
