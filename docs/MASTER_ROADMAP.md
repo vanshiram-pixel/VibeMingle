@@ -29,17 +29,18 @@ Status means evidence in the current GitHub branch. A migration/file/scaffold is
 4. Age gate, consent, privacy controls, account safety baseline
 5. Friend requests/accept/reject/remove/block; discovery/search
 6. Presence/online state and privacy-aware visibility
-7. 1:1 private chat: send/receive/realtime, history, pagination, typing, delivered/read, edit/delete, image sharing, block/report
-8. Audio/video calling: request/ringing/accept/decline/missed/busy/end, signaling, WebRTC, TURN, permissions, controls, reconnect, call history
-9. Push notifications (FCM/APNs/web as applicable), in-app inbox/preferences
-10. Reporting/moderation/admin minimum viable operations, ban/suspend, review queue, audit trail
-11. Android app + responsive web client; admin panel for launch operations
-12. Security/RLS/abuse/rate limits, backups/observability, QA, release, store/web launch
+7. **Instant Stranger Video Matching (V1):** one-tap auto-pairing and automatic video-call activation, target <1 second when a compatible peer is already waiting; mandatory 15-second initial interaction window (Next disabled, safety exit always available); Next Stranger rematch; queue/retry window up to 60–70 seconds before no-match/retry state
+8. 1:1 private chat: send/receive/realtime, history, pagination, typing, delivered/read, edit/delete, image sharing, block/report
+9. Audio/video calling: request/ringing/accept/decline/missed/busy/end, signaling, WebRTC, TURN, permissions, controls, reconnect, call history
+10. Push notifications (FCM/APNs/web as applicable), in-app inbox/preferences
+11. Reporting/moderation/admin minimum viable operations, ban/suspend, review queue, audit trail
+12. Android app + responsive web client; admin panel for launch operations
+13. Security/RLS/abuse/rate limits, backups/observability, QA, release, store/web launch
 
 V1 acceptance: a real pair of test users can Google sign in, set profiles, friend each other, discover presence, exchange messages and media, complete audio/video calls across networks, report/block, receive notifications; admin can review/act; data is protected; automated and manual test evidence exists; release can be rolled back.
 
 ## V2 / Advanced product
-- Smart matching/ranking, richer filters and preferences
+- Smart matching/ranking, richer filters and preferences (beyond V1 basic instant stranger queue)
 - AI-assisted translation in chat/calls, language detection and user controls
 - Enhanced social features and engagement
 - AI moderation triage and abuse/spam detection with human review
@@ -62,7 +63,7 @@ P02 Google Auth & account security
 P03 Age, consent, privacy & data lifecycle
 P04 Profiles & media
 P05 Discovery, presence & friend graph
-P06 Matching & preferences
+P06 Basic Instant Stranger Matching (V1) & advanced matching foundations
 P07 Messaging (text, realtime, receipts, edit/delete, media)
 P08 Calling (signaling, WebRTC, TURN, lifecycle, reliability)
 P09 Safety & moderation (report/block/admin workflows)
@@ -73,7 +74,7 @@ P13 Admin & operations (users, moderation, analytics, CMS, audit)
 P14 Web client & global infrastructure
 P15 QA, security review, staging, release and launch
 
-Dependencies: P01→P02→P03/P04→P05→P06; P05 unlocks P07/P08; P07/P08 feed P09/P12; P09 required before public launch; P10/P11 can be built in parallel after secure core but must have policy/abuse safeguards; P13 is needed before launch for support/moderation; P14 web work can parallelize after API contracts; P15 gates launch.
+Dependencies: P01→P02→P03/P04→P05→P06 (presence + age/consent + block/report rules required); P06→P08 (match must hand off into authenticated WebRTC call lifecycle); P05 unlocks P07/P08; P07/P08 feed P09/P12; P09 required before public launch; P10/P11 can be built in parallel after secure core but must have policy/abuse safeguards; P13 is needed before launch for support/moderation; P14 web work can parallelize after API contracts; P15 gates launch.
 
 ## Status / honest progress snapshot (2026-11-15)
 Percentages below are rough evidence-based engineering estimates, not tests or certification.
@@ -82,7 +83,7 @@ P02 Google Auth: ~15% (Supabase auth/session UI; Google-only OAuth and lifecycle
 P03 Age/consent/privacy: ~0–5% (no user-facing flows evidenced)
 P04 Profiles: ~25% (schema/trigger; full profile UI, avatar pipeline and validation incomplete)
 P05 Friends/presence: ~35% (SQL + initial UI/repositories; integration/privacy/runtime tests missing)
-P06 Matching: ~0–5% (no matching engine/UI)
+P06 Matching: ~10% (requirements/spec documented in docs/instant-stranger-matching.md; queue, atomic pairing, UI, signaling integration and tests not implemented)
 P07 Messaging: ~25% (SQL + repository + basic thread; realtime, typing auth, receipts, media, edit/delete UI and test evidence incomplete)
 P08 Calling: ~15% (sessions/RPC/repository and WebRTC scaffold; signaling/TURN/complete call UX/testing missing)
 P09 Safety/moderation: ~10% (block/report fragments; full reporting/admin review/escalation missing)
@@ -101,6 +102,7 @@ Overall integrated launch readiness: roughly 10–15%, not a weighted average an
 - Keep PR #1 draft until Flutter analyze/build, SQL validation, RLS tests and two-user integration pass.
 - Add a phase checklist, acceptance criteria, blockers, test evidence and status to every phase.
 - No "done" label for scaffold/schema-only; use NOT STARTED / IN PROGRESS / IMPLEMENTED / INTEGRATED / VERIFIED / RELEASED.
+- Instant stranger matching spec: docs/instant-stranger-matching.md. Keep 1-second pairing as a measured target—not a guarantee; the 60–70-second queue window is a retry/no-match UX, not a promise that every user gets a stranger.
 - No production deployment, store release or launch without user notification and approval.
 
 ## Next execution (ordered)
