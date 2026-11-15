@@ -74,7 +74,7 @@ class ChatRepository {
         }
       },
     );
-    unawaited(channel.subscribe());
+    channel.subscribe();
     return controller.stream;
   }
 }
