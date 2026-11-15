@@ -145,3 +145,5 @@ This is a source/repository audit, not a live production or legal certification.
 - Migration `0025_private_call_requests.sql`: participant-only RLS read, server-controlled insert/update, authenticated RPC create/respond/cancel; 90-second expiry, duplicate pending guard, both-direction block check, age assurance checks, accept atomically creates match session.
 - Mobile `CallRequestsScreen`: outgoing request by peer UUID, incoming accept/decline, outgoing status/cancel; Home entry added. Accept opens existing LiveKit VideoCallScreen/session token flow.
 - Commits: migration `8eaae870`, screen `35e19b82`, Home entry `c52903a2`. Verify migration replay, Flutter analyzer, API/V3 CI and device behavior. Notifications/push and friend-only request policy still need integration; recipient can currently be any eligible profile UUID.
+
+- CI correction: removed unused RPC result local from `call_requests_screen.dart` (`f1b6f109`). Earlier V3 analyzer runs failed solely on that warning; rerun V3 analyzer after correction.
