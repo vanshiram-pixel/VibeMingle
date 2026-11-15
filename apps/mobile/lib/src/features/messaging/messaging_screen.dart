@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 
 class MessagingScreen extends StatefulWidget {
   const MessagingScreen({super.key});
@@ -442,7 +443,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                             maxLines: 2, overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 12)),
                         ),
-                        if (message['message_attachments'] is List && (message['message_attachments'] as List).isNotEmpty) ...((message['message_attachments'] as List).map((raw) { final a = Map<String,dynamic>.from(raw as Map); final url = _attachmentUrls[a['id'].toString()]; return Padding(padding: const EdgeInsets.only(bottom: 5), child: url == null ? const Text('Attachment loading…') : a['media_kind']=='image' ? Image.network(url, width: 220, fit: BoxFit.cover) : InkWell(onTap: () {}, child: Row(children: [const Icon(Icons.play_circle), Flexible(child: Text(a['file_name'].toString()))]))); })),
+                        if (message['message_attachments'] is List && (message['message_attachments'] as List).isNotEmpty) ...((message['message_attachments'] as List).map((raw) { final a = Map<String,dynamic>.from(raw as Map); final url = _attachmentUrls[a['id'].toString()]; return Padding(padding: const EdgeInsets.only(bottom: 5), child: url == null ? const Text('Attachment loading…') : a['media_kind']=='image' ? Image.network(url, width: 220, fit: BoxFit.cover) : InkWell(onTap: a['media_kind']=='video' ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _ChatVideoPlayer(url: url, title: a['file_name'].toString()))) : null, child: Row(children: [Icon(a['media_kind']=='video' ? Icons.play_circle : Icons.audiotrack), Flexible(child: Text(a['file_name'].toString()))]))); })),
                         Text(message['deleted_at'] != null ? 'Message deleted' :
                           message['body'].toString()),
                         if (message['deleted_at'] == null) ...[
@@ -498,4 +499,20 @@ class _ConversationScreenState extends State<ConversationScreen> {
       ]),
     );
   }
+}
+
+
+class _ChatVideoPlayer extends StatefulWidget {
+  const _ChatVideoPlayer({required this.url, required this.title});
+  final String url;
+  final String title;
+  @override
+  State<_ChatVideoPlayer> createState() => _ChatVideoPlayerState();
+}
+class _ChatVideoPlayerState extends State<_ChatVideoPlayer> {
+  late final VideoPlayerController _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))..initialize().then((_) { if (mounted) setState(() {}); });
+  @override
+  void dispose() { _controller.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(widget.title)), body: Center(child: _controller.value.isInitialized ? AspectRatio(aspectRatio: _controller.value.aspectRatio, child: Stack(alignment: Alignment.center, children: [VideoPlayer(_controller), IconButton(iconSize: 64, color: Colors.white, icon: Icon(_controller.value.isPlaying ? Icons.pause_circle : Icons.play_circle), onPressed: () { setState(() { _controller.value.isPlaying ? _controller.pause() : _controller.play(); }); })])) : const CircularProgressIndicator()));
 }
