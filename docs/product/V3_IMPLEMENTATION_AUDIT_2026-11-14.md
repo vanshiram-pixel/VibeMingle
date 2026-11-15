@@ -151,3 +151,5 @@ This is a source/repository audit, not a live production or legal certification.
 - Safety tightening: `call_request_create` now requires an accepted friendship in addition to block/age checks; non-friends cannot initiate private calls (commit `4b98c46e`).
 
 - UX refinement: call-request recipient now selected from the safe friend list (display names), not pasted UUID; commit `30fc7cf1`. CI/device validation pending.
+
+- Chat reactions: migration `0026_message_reactions.sql` adds member-only read/self insert-delete RLS; Flutter message bubbles render reaction counts and quick toggle/add-reaction picker (`2ee95a55`). CI and DB smoke pending.
