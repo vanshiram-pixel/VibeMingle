@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -119,11 +121,28 @@ class _ConversationScreenState extends State<ConversationScreen> {
   List<Map<String, dynamic>> _messages = [];
   bool _loading = true, _sending = false;
   RealtimeChannel? _channel;
+  RealtimeChannel? _typingChannel;
+  Timer? _typingTimer;
+  bool _peerTyping = false;
+  String? _peerUserId;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _typingChannel = _db.channel('typing-${widget.conversationId}')
+      .onBroadcast(event: 'typing', callback: (payload) {
+        final sender = payload['user_id']?.toString();
+        if (sender == null || sender == _db.auth.currentUser?.id) return;
+        final typing = payload['typing'] == true;
+        if (mounted) setState(() => _peerTyping = typing);
+        _typingTimer?.cancel();
+        if (typing) {
+          _typingTimer = Timer(const Duration(seconds: 3), () {
+            if (mounted) setState(() => _peerTyping = false);
+          });
+        }
+      }).subscribe();
     _channel = _db.channel('messages-${widget.conversationId}')
       .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public',
         table: 'messages',
@@ -147,7 +166,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
-  Future<void> _send() async {
+  void _onTypingChanged(String value) {\n    if (value.trim().isEmpty) { _stopTyping(); return; }\n    _typingChannel?.sendBroadcastMessage(event: 'typing', payload: {\n      'user_id': _db.auth.currentUser?.id, 'typing': true,\n    });\n    _typingTimer?.cancel();\n    _typingTimer = Timer(const Duration(milliseconds: 1200), _stopTyping);\n  }\n\n  void _stopTyping() {\n    _typingTimer?.cancel();\n    _typingChannel?.sendBroadcastMessage(event: 'typing', payload: {\n      'user_id': _db.auth.currentUser?.id, 'typing': false,\n    });\n  }\n\n  Future<void> _send() async {
     final body = _input.text.trim();
     if (body.isEmpty || _sending) return;
     setState(() => _sending = true);
@@ -251,7 +270,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   @override
   void dispose() {
     _input.dispose();
-    if (_channel != null) _db.removeChannel(_channel!);
+    _typingTimer?.cancel();\n    _stopTyping();\n    if (_typingChannel != null) _db.removeChannel(_typingChannel!);\n    if (_channel != null) _db.removeChannel(_channel!);
     super.dispose();
   }
 
@@ -289,7 +308,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           )),
         SafeArea(child: Padding(padding: const EdgeInsets.all(8),
           child: Row(children: [
-            Expanded(child: TextField(controller: _input, minLines: 1, maxLines: 4,
+            Expanded(child: TextField(controller: _input, onChanged: _onTypingChanged, minLines: 1, maxLines: 4,
               decoration: const InputDecoration(hintText: 'Write a message…',
                 border: OutlineInputBorder()))),
             IconButton(onPressed: _sending ? null : _send,
