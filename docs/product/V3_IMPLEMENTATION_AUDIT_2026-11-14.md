@@ -133,3 +133,6 @@ This is a source/repository audit, not a live production or legal certification.
 
 
 - CI correction (2026-11-15): conversation list sorting patch initially contained escaped `\\n` text, causing Flutter analyze failure on commit `88eac142` (V3 CI failed). Corrected to real line breaks in `6cb27400`; re-run CI before considering this UX change verified.
+
+
+- Chat UI additions (2026-11-15): emoji picker inserts selected emoji at cursor; message bubbles show local time and edited marker; own messages show sent check. Commits `d2ff904b` and newline normalization `5a49b846`. Earlier conversation sorting patch CI failed due escaped newline literals; corrected. Awaiting CI for current snapshot.
