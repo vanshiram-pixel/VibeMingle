@@ -115,6 +115,17 @@ class CallRepository {
     return controller.stream;
   }
 
+  /// Fetch a participant's current session state (recovery after missed realtime events).
+  Future<CallSession> getSession(String callId) async {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) throw StateError('Sign in to inspect call state');
+    final row = await _db.from('call_sessions').select().eq('id', callId).single();
+    if (row['caller_id'] != uid && row['callee_id'] != uid) {
+      throw StateError('Not a participant in this call');
+    }
+    return CallSession.fromJson(Map<String, dynamic>.from(row));
+  }
+
   /// Live incoming ringing sessions addressed to the signed-in user.
   /// call_sessions is published to Supabase Realtime by migration 0021;
   /// the callback rechecks callee/status rather than trusting the filter alone.
