@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
         const pb = p.get(b.user_id);
         if (!pa || !pb || a.user_id === b.user_id) continue;
         // Age bands are exact target bands until a reviewed range model is implemented.
-        if ((a.age_band && pa.age_band !== b.age_band) || (b.age_band && pb.age_band !== a.age_band)) continue;
+        if ((a.age_band && a.age_band !== pb.age_band) || (b.age_band && b.age_band !== pa.age_band)) continue;
         if (a.gender_preference && a.gender_preference !== "any" && a.gender_preference !== pb.gender) continue;
         if (b.gender_preference && b.gender_preference !== "any" && b.gender_preference !== pa.gender) continue;
         if ((a.languages?.length && !intersects(a.languages, pb.languages)) ||
