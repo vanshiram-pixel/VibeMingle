@@ -245,3 +245,7 @@ Every screen has route, entry/exit, visible controls, enabled/disabled rules, ev
 Every button has: label → click/tap → precondition → state change → API/event → success UI → failure/rollback → audit/analytics (where appropriate).
 Every backend operation has: auth, authorization/RLS, validation, idempotency, transaction/race strategy, rate limit, error contract, observability and tests.
 Every integration has provider configuration, secrets server-side, consent, quotas, outage fallback and verified staging evidence.
+
+
+## 12. Locked Stranger Match → Friend → Chat/Private Call flow
+The permanent, detailed contract is in [docs/STRANGER_MATCH_FRIEND_FLOW.md](STRANGER_MATCH_FRIEND_FLOW.md). Key invariant: Match Add Friend sends a mutual request; Accept creates friendship; Follow remains independent; canonical match conversation is reused; private call after friendship still requires receiver Accept and privacy permission; former non-friend matches cannot direct-call/rejoin; Block overrides every relationship and contact path. This is specified, not yet implemented or runtime verified.
