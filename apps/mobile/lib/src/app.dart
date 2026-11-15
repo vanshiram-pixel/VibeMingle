@@ -255,31 +255,42 @@ class _IncomingCallListenerState extends State<IncomingCallListener> {
       session: session,
       onDecline: () => _calls.decline(session.id),
       onAccept: () async {
-        await _calls.accept(session.id);
-        await _calls.transition(callId: session.id, action: 'connecting');
-        late CallSignalingCoordinator signaling;
-        final controller = WebRtcCallController(
-          sendSignal: (signal) => signaling.send(signal),
-          onRemoteStream: (_) {},
-          onConnectionState: (_) {},
-        );
-        await controller.initialize(video: session.type.name == 'video');
-        signaling = CallSignalingCoordinator(
-          repository: _calls, controller: controller, callId: session.id,
-          remoteUserId: session.callerId,
-        );
-        await signaling.startListening();
-        if (!mounted) {
-          await signaling.close();
-          await controller.close();
-          return;
+        WebRtcCallController? controller;
+        CallSignalingCoordinator? signaling;
+        try {
+          await _calls.accept(session.id);
+          await _calls.transition(callId: session.id, action: 'connecting');
+          controller = WebRtcCallController(
+            sendSignal: (signal) => signaling!.send(signal),
+            onRemoteStream: (_) {},
+            onConnectionState: (_) {},
+          );
+          await controller.initialize(video: session.type.name == 'video');
+          signaling = CallSignalingCoordinator(
+            repository: _calls, controller: controller, callId: session.id,
+            remoteUserId: session.callerId,
+          );
+          await signaling.startListening();
+          if (!mounted) {
+            await signaling.close();
+            await controller.close();
+            return;
+          }
+          navigator.pushReplacement(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
+            session: session, peerName: callerName, controller: controller!,
+            signaling: signaling!, onEnd: () => _calls.end(session.id),
+            onConnected: () => _calls.transition(callId: session.id, action: 'connected').then((_) {}),
+          )));
+        } catch (e) {
+          await signaling?.close();
+          await controller?.close();
+          try { await _calls.transition(callId: session.id, action: 'failed', reason: 'media_setup_failed'); } catch (_) {}
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Call connection failed: $e')),
+            );
+          }
         }
-        navigator.pushReplacement(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
-          session: session, peerName: callerName, controller: controller,
-          signaling: signaling,
-          onEnd: () => _calls.end(session.id),
-          onConnected: () => _calls.transition(callId: session.id, action: 'connected').then((_) {}),
-        )));
       },
     )));
   }
