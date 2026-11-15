@@ -237,9 +237,6 @@ class _IncomingCallListenerState extends State<IncomingCallListener> {
     }
   }
 
-  //
-  }
-
   Future<void> _showIncoming(dynamic session) async {
     final navigator = Navigator.of(context);
     var callerName = 'VibeMingle user';
