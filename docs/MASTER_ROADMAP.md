@@ -89,3 +89,8 @@ Scope → code → integration → quality → security/privacy → operations/r
 No V4.1 feature expansion. Engineering fixes, integration and security corrections that preserve locked scope are allowed. Any new feature requires separate future-version approval; never silently add it.
 
 **Final:** V4.1 is the fixed target. Build, integrate, verify and prepare launch against this scope only.
+
+## V4.1 P01 Audit — 2026-11-15
+- [Repository Audit & Traceability Baseline](./V4_1_P01_REPOSITORY_AUDIT_AND_TRACEABILITY_BASELINE.md): inventory, code/spec mismatches, route coverage and test evidence gaps.
+- P01 is IN_PROGRESS: GitHub source inspection is documented; local Flutter/SQL/staging/device/CI evidence remains unavailable.
+- Immediate P02 priority: canonical API/schema contracts and E2EE architecture before further chat feature expansion.
