@@ -53,19 +53,17 @@ class CallRepository {
   Stream<CallStateEvent> eventsForUser() {
     final uid = _db.auth.currentUser?.id;
     if (uid == null) throw StateError('Sign in before listening for calls');
-    final controller = StreamController<CallStateEvent>();
-    _channel = _db.channel('call-events-$uid')
+    late final RealtimeChannel channel;
+    final controller = StreamController<CallStateEvent>(onCancel: () async {
+      await _db.removeChannel(channel);
+      if (identical(_channel, channel)) _channel = null;
+    });
+    channel = _db.channel('call-events-$uid')
       .onBroadcast(event: 'call_state', callback: (payload) {
         if (!controller.isClosed) {
           controller.add(CallStateEvent.fromJson(payload));
         }
       }).subscribe();
-    controller.onCancel = () async {
-      if (_channel != null) {
-        await _db.removeChannel(_channel!);
-        _channel = null;
-      }
-    };
     return controller.stream;
   }
 
