@@ -166,6 +166,44 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
+  Future<void> _report(String id) async {
+    const categories = <String, String>{
+      'harassment': 'Harassment',
+      'sexual_content': 'Sexual content',
+      'minor_safety': 'Minor safety',
+      'spam': 'Spam',
+      'hate': 'Hate',
+      'violence': 'Violence',
+      'impersonation': 'Impersonation',
+      'scam': 'Scam',
+      'other': 'Other',
+    };
+    final category = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Report this message?'),
+        content: const Text('यह संदेश moderation team को report होगा।'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel')),
+          ...categories.entries.map((entry) => TextButton(
+            onPressed: () => Navigator.pop(ctx, entry.key),
+            child: Text(entry.value))),
+        ],
+      ),
+    );
+    if (category == null) return;
+    try {
+      await _db.rpc('message_report', params: {
+        'p_message': id, 'p_category': category, 'p_description': ''});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Report submitted. धन्यवाद।')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Report नहीं भेजी गई: $e')));
+    }
+  }
+
   @override
   void dispose() {
     _input.dispose();
@@ -188,8 +226,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
               return Align(
                 alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
                 child: GestureDetector(
-                  onLongPress: mine && message['deleted_at'] == null
-                    ? () => _delete(message['id'].toString()) : null,
+                  onLongPress: message['deleted_at'] != null ? null :
+                    () => mine ? _delete(message['id'].toString()) :
+                      _report(message['id'].toString()),
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 5),
                     padding: const EdgeInsets.all(12),
