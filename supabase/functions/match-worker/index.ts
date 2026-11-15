@@ -4,7 +4,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const cors = {
-  "access-control-allow-origin": "https://vibemingle.app",
+  "access-control-allow-origin": "null",
   "access-control-allow-headers": "authorization, x-match-worker-secret, content-type",
   "access-control-allow-methods": "POST, OPTIONS",
   "content-type": "application/json",
@@ -12,16 +12,21 @@ const cors = {
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors });
 const intersects = (a: string[] | null, b: string[] | null) =>
   (a ?? []).some((x) => (b ?? []).includes(x));
+const isAllowedOrigin = (origin: string | null) =>
+  origin === null || origin === "https://vibemingle.app" || origin === "https://www.vibemingle.app";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  const origin = req.headers.get("origin");
+  if (!isAllowedOrigin(origin)) return json({ error: "origin_not_allowed" }, 403);
+  const responseHeaders = { ...cors, "access-control-allow-origin": origin ?? "https://vibemingle.app", "vary": "Origin" };
+  if (req.method === "OPTIONS") return new Response("ok", { headers: responseHeaders });
+  if (req.method !== "POST") return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers: responseHeaders });
   const secret = Deno.env.get("MATCH_WORKER_SECRET");
-  if (!secret || req.headers.get("x-match-worker-secret") !== secret) return json({ error: "unauthorized" }, 401);
+  if (!secret || req.headers.get("x-match-worker-secret") !== secret) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: responseHeaders });
 
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) return json({ error: "worker_configuration_missing" }, 500);
+  if (!url || !serviceKey) return new Response(JSON.stringify({ error: "worker_configuration_missing" }), { status: 500, headers: responseHeaders });
   const db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
   try {
@@ -30,7 +35,7 @@ Deno.serve(async (req) => {
       .eq("queue_state", "waiting").gte("heartbeat_at", new Date(Date.now() - 30_000).toISOString())
       .order("queued_at", { ascending: true }).limit(100);
     if (qe) throw qe;
-    if (!queue || queue.length < 2) return json({ scanned: queue?.length ?? 0, reserved: 0 });
+    if (!queue || queue.length < 2) return new Response(JSON.stringify({ scanned: queue?.length ?? 0, reserved: 0 }), { status: 200, headers: responseHeaders });
 
     const ids = queue.map((q) => q.user_id);
     const [{ data: profiles, error: pe }, { data: consents, error: ce }, { data: eligibility, error: ee }] = await Promise.all([
@@ -78,9 +83,9 @@ Deno.serve(async (req) => {
         }
       }
     }
-    return json({ scanned: queue.length, eligible: active.length, reserved });
+    return new Response(JSON.stringify({ scanned: queue.length, eligible: active.length, reserved }), { status: 200, headers: responseHeaders });
   } catch (e) {
     console.error("match worker failed", e);
-    return json({ error: "worker_failed" }, 500);
+    return new Response(JSON.stringify({ error: "worker_failed" }), { status: 500, headers: responseHeaders });
   }
 });
