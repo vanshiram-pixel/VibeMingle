@@ -16,8 +16,8 @@ class WebRtcCallController {
 
   /// Sends an authenticated, participant-checked signal to the peer.
   final Future<void> Function(Map<String, dynamic> signal) sendSignal;
-  final void Function(MediaStream stream) onRemoteStream;
-  final void Function(RTCPeerConnectionState state) onConnectionState;
+  void Function(MediaStream stream) onRemoteStream;
+  void Function(RTCPeerConnectionState state) onConnectionState;
 
   RTCPeerConnection? _peer;
   MediaStream? _local;
