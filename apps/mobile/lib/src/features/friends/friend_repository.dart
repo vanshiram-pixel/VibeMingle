@@ -15,7 +15,7 @@ class FriendRepository {
   final r=await _client.rpc('discover_profiles',params:{'p_query':query,'p_age_band':ageBand,'p_gender':gender,'p_language':language,'p_interest':interest,'p_limit':limit});
   return (r as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList();
  }
- Future<void> updateDiscoverable(bool enabled) async {
+ Future<List<Map<String,dynamic>>> followers() async {\n  final r=await _client.from('user_follows').select('follower_id').eq('followed_id',_client.auth.currentUser!.id);\n  final ids=r.map((x)=>x['follower_id']).toList();if(ids.isEmpty)return [];return await _client.from('profiles').select('id,username,display_name,avatar_url').inFilter('id',ids);\n }\n Future<List<Map<String,dynamic>>> following() async {\n  final r=await _client.from('user_follows').select('followed_id').eq('follower_id',_client.auth.currentUser!.id);\n  final ids=r.map((x)=>x['followed_id']).toList();if(ids.isEmpty)return [];return await _client.from('profiles').select('id,username,display_name,avatar_url').inFilter('id',ids);\n }\n Future<void> follow(String id) async {await _client.rpc('user_follow',params:{'p_user_id':id});}\n Future<void> unfollow(String id) async {await _client.rpc('user_unfollow',params:{'p_user_id':id});}\n Future<void> updateDiscoverable(bool enabled) async {
   await _client.from('profiles').update({'discoverable':enabled,'updated_profile_at':DateTime.now().toUtc().toIso8601String()}).eq('id',_client.auth.currentUser!.id);
  }
 
