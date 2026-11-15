@@ -171,9 +171,18 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Future<void> _pickReaction(String messageId) async {
     const choices = ['👍','❤️','😂','😮','😢','🙏','🔥','🎉'];
-    final emoji = await showModalBottomSheet<String>(context: context, builder: (ctx) =>
-      SafeArea(child: Wrap(spacing: 12, children: choices.map((e) => TextButton(
-        onPressed: () => Navigator.pop(ctx, e), child: Text(e, style: const TextStyle(fontSize: 26)))).toList()));
+    final emoji = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          spacing: 12,
+          children: choices.map((e) => TextButton(
+            onPressed: () => Navigator.pop(ctx, e),
+            child: Text(e, style: const TextStyle(fontSize: 26)),
+          )).toList(),
+        ),
+      ),
+    );
     if (emoji != null) await _toggleReaction(messageId, emoji);
   }
 
