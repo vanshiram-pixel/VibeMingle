@@ -22,3 +22,12 @@ jobs:
       - run: dart format lib
       - run: flutter analyze
       - run: flutter test
+      - name: Generate Android platform scaffold
+        run: flutter create --platforms=android --project-name vibe_mingle .
+      - name: Build release APK (configuration placeholder)
+        run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vibe-mingle-android-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
