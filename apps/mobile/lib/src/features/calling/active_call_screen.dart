@@ -17,6 +17,7 @@ class ActiveCallScreen extends StatefulWidget {
     required this.controller,
     required this.signaling,
     required this.onEnd,
+    required this.onConnected,
   });
 
   final CallSession session;
@@ -24,6 +25,7 @@ class ActiveCallScreen extends StatefulWidget {
   final WebRtcCallController controller;
   final CallSignalingCoordinator signaling;
   final Future<void> Function() onEnd;
+  final Future<void> Function() onConnected;
 
   @override
   State<ActiveCallScreen> createState() => _ActiveCallScreenState();
@@ -36,6 +38,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
   bool _cameraEnabled = true;
   bool _ending = false;
   bool _renderersReady = false;
+  bool _connectedReported = false;
   RTCPeerConnectionState _connection = RTCPeerConnectionState.RTCPeerConnectionStateNew;
 
   @override
@@ -49,6 +52,10 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
     };
     widget.controller.onConnectionState = (state) {
       if (mounted) setState(() => _connection = state);
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected && !_connectedReported) {
+        _connectedReported = true;
+        unawaited(widget.onConnected());
+      }
     };
   }
 
