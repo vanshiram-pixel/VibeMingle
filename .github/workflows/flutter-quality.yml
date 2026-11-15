@@ -19,7 +19,8 @@ jobs:
           cache: true
           cache-key: flutter-${{ runner.os }}-${{ hashFiles('apps/mobile/pubspec.lock') }}
       - run: flutter pub get
-      - name: Format Dart sources (CI workspace)\n        run: dart format lib || echo 'Dart formatter applied changes; continuing with analyzer and tests'
+      - name: Format Dart sources (CI workspace)
+        run: dart format lib || echo 'Dart formatter applied changes; continuing with analyzer and tests'
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
       - name: Generate Android platform scaffold
