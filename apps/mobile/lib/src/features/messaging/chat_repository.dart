@@ -72,8 +72,8 @@ class ChatRepository {
       },
     );
     unawaited(channel.subscribe());
-    controller.onCancel = () async {
-      await _client.removeChannel(channel);
+    controller.onCancel = () {
+      unawaited(_client.removeChannel(channel));
     };
     return controller.stream;
   }
