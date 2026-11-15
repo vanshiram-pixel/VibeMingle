@@ -65,11 +65,12 @@ class _FriendsScreenState extends State<FriendsScreen>
         connecting = true;
         await statusSub?.cancel();
         if (statusSub != null) _callSubscriptions.remove(statusSub);
+        WebRtcCallController? controller;
+        CallSignalingCoordinator? signaling;
         try {
           await _calls.transition(callId: session.id, action: 'connecting');
-          late CallSignalingCoordinator signaling;
-          final controller = WebRtcCallController(
-            sendSignal: (signal) => signaling.send(signal),
+          controller = WebRtcCallController(
+            sendSignal: (signal) => signaling!.send(signal),
             onRemoteStream: (_) {}, onConnectionState: (_) {},
           );
           await controller.initialize(video: type == CallType.video);
@@ -79,11 +80,13 @@ class _FriendsScreenState extends State<FriendsScreen>
           await controller.createOffer();
           if (!mounted) { await signaling.close(); await controller.close(); return; }
           Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ActiveCallScreen(
-            session: session, peerName: _name(friend), controller: controller,
-            signaling: signaling, onEnd: () => _calls.end(session.id),
+            session: session, peerName: _name(friend), controller: controller!,
+            signaling: signaling!, onEnd: () => _calls.end(session.id),
             onConnected: () async { await _calls.transition(callId: session.id, action: 'connected'); },
           )));
         } catch (e) {
+          await signaling?.close();
+          await controller?.close();
           try { await _calls.transition(callId: session.id, action: 'failed', reason: 'media_setup_failed'); } catch (_) {}
           if (mounted) _toast('Call connection failed: $e');
         }
