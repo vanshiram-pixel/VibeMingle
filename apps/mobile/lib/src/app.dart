@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'features/friends/friends_screen.dart';
 import 'features/messaging/messaging_screen.dart';
 import 'features/messaging/chat_thread_screen.dart';
+import 'features/matching/match_screen.dart';
 
 final _router = GoRouter(
   routes: [
@@ -11,6 +12,7 @@ final _router = GoRouter(
     GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
     GoRoute(path: '/friends', builder: (context, state) => const FriendsScreen()),
     GoRoute(path: '/messages', builder: (context, state) => const ChatInboxScreen()),
+    GoRoute(path: '/match', builder: (context, state) => const MatchScreen()),
   ],
 );
 
@@ -79,7 +81,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _HomeAction(icon: Icons.people_alt, title: 'Friends', subtitle: 'Find people and manage requests', onTap: () => context.go('/friends')),
               _HomeAction(icon: Icons.chat_bubble, title: 'Private Chats', subtitle: 'Open your messages', onTap: () => context.go('/messages')),
-              const _HomeAction(icon: Icons.call, title: 'Calls', subtitle: 'Voice and video calling — next integration'),
+              const _HomeAction(icon: Icons.video_call, title: 'Stranger Match', subtitle: 'Consent-based matching queue', onTap: () => context.go('/match')),
             ],
           ),
         );
