@@ -117,7 +117,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final _db = Supabase.instance.client;
   final _input = TextEditingController();
   List<Map<String, dynamic>> _messages = [];
-  bool _loading = true, _sending = false;
+  bool _loading = true, _sending = false;\n  DateTime? _peerReadAt;
   RealtimeChannel? _channel;
 
   @override
@@ -137,7 +137,13 @@ class _ConversationScreenState extends State<ConversationScreen> {
       final rows = await _db.from('messages')
         .select('id,sender_id,body,created_at,edited_at,deleted_at,message_reactions(user_id,emoji)')
         .eq('conversation_id', widget.conversationId).order('created_at');
-      if (mounted) setState(() => _messages = List<Map<String, dynamic>>.from(rows));
+      final uid = _db.auth.currentUser!.id;
+      final member = await _db.from('conversation_members').select('user_id,last_read_at')
+        .eq('conversation_id', widget.conversationId).neq('user_id', uid).maybeSingle();
+      if (mounted) setState(() {
+        _messages = List<Map<String, dynamic>>.from(rows);
+        _peerReadAt = DateTime.tryParse(member?['last_read_at']?.toString() ?? '');
+      });
       await _db.rpc('conversation_mark_read', params: {'p_conversation': widget.conversationId});
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -362,8 +368,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
                             const Text('edited · ', style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic)),
                           Text(DateTime.tryParse(message['created_at'].toString())?.toLocal().toString().substring(11, 16) ?? '',
                             style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                          if (mine) const Padding(padding: EdgeInsets.only(left: 4),
-                            child: Icon(Icons.done, size: 13)),
+                          if (mine) Padding(padding: const EdgeInsets.only(left: 4),
+                            child: Icon(
+                              _peerReadAt != null && _peerReadAt!.isAfter(DateTime.tryParse(message['created_at'].toString()) ?? DateTime.fromMillisecondsSinceEpoch(0))
+                                ? Icons.done_all : Icons.done,
+                              size: 13, color: _peerReadAt != null && _peerReadAt!.isAfter(DateTime.tryParse(message['created_at'].toString()) ?? DateTime.fromMillisecondsSinceEpoch(0))
+                                ? Theme.of(context).colorScheme.primary : null)),
                         ]),
                       ]),
                   ),
