@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 final _router = GoRouter(
   routes: [
@@ -29,30 +28,71 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    if (!Supabase.instance.isInitialized) {
+      return Scaffold(
         appBar: AppBar(title: const Text('VibeMingle')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.forum_rounded, size: 72),
-                const SizedBox(height: 16),
-                Text('Connect privately.', style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 8),
-                const Text('Chat, voice and video with your friends.'),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => context.go('/auth'),
-                  icon: const Icon(Icons.login),
-                  label: const Text('Sign in / Create account'),
-                ),
-              ],
-            ),
-          ),
-        ),
+        body: Center(child: FilledButton(
+          onPressed: () => context.go('/auth'),
+          child: const Text('Sign in / Create account'),
+        )),
       );
+    }
+    return StreamBuilder<AuthState>(
+      stream: Supabase.instance.client.auth.onAuthStateChange,
+      builder: (context, snapshot) {
+        final user = Supabase.instance.client.auth.currentUser;
+        if (user == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('VibeMingle')),
+            body: Center(child: FilledButton.icon(
+              onPressed: () => context.go('/auth'),
+              icon: const Icon(Icons.login),
+              label: const Text('Sign in / Create account'),
+            )),
+          );
+        }
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('VibeMingle'),
+            actions: [IconButton(
+              tooltip: 'Sign out',
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                await Supabase.instance.client.auth.signOut();
+                if (context.mounted) context.go('/auth');
+              },
+            )],
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              CircleAvatar(radius: 34, child: Text((user.email ?? 'V')[0].toUpperCase())),
+              const SizedBox(height: 12),
+              Text(user.email ?? 'VibeMingle user', textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 24),
+              const _HomeAction(icon: Icons.people_alt, title: 'Friends', subtitle: 'Friend list and requests — next integration'),
+              const _HomeAction(icon: Icons.chat_bubble, title: 'Private Chats', subtitle: 'Your conversations — next integration'),
+              const _HomeAction(icon: Icons.call, title: 'Calls', subtitle: 'Voice and video calling — next integration'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HomeAction extends StatelessWidget {
+  const _HomeAction({required this.icon, required this.title, required this.subtitle});
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  @override
+  Widget build(BuildContext context) => Card(
+    child: ListTile(leading: Icon(icon), title: Text(title), subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right)),
+  );
 }
 
 class AuthScreen extends StatefulWidget {
@@ -67,7 +107,6 @@ class _AuthScreenState extends State<AuthScreen> {
   final _password = TextEditingController();
   bool _creating = false;
   bool _busy = false;
-  bool get _configured => Supabase.instance.isInitialized;
   bool get _configured => Supabase.instance.isInitialized;
 
   @override
