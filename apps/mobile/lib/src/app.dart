@@ -252,6 +252,7 @@ class _IncomingCallListenerState extends State<IncomingCallListener> {
           session: session, peerName: 'VibeMingle user', controller: controller,
           signaling: signaling,
           onEnd: () => _calls.end(session.id),
+          onConnected: () => _calls.transition(callId: session.id, action: 'connected').then((_) {}),
         )));
       },
     )));
