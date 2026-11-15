@@ -24,7 +24,7 @@ Scope: VibeMingle V1 basic stranger matching + video handoff. Advanced ranking r
 - Keep camera/mic media peer-to-peer via WebRTC where possible; signaling and TURN credentials are authenticated and short-lived.
 
 ## UX & safety
-- Visible Searching timer/status; show “No stranger available—keep searching or cancel” at 60–70 sec.
+- Visible Searching timer/status; target next-stranger rematch ≤1–2 sec when a compatible peer is waiting; if the pool is empty, continue searching and let the user cancel (no fixed 60–70 sec timeout).
 - 15-second countdown indicator and disabled Next button; explain why.
 - Safety controls always active: end call, report, block, camera off, mic mute. These override the minimum window instantly.
 - After Next, show a brief connecting state; do not expose personal phone/email/location.
@@ -33,7 +33,7 @@ Scope: VibeMingle V1 basic stranger matching + video handoff. Advanced ranking r
 
 ## Performance targets (acceptance, not claims)
 - When a compatible peer is already queued: server pairing event p95 target ≤1 sec; measure separately from media connection time.
-- Queue wait: try continuously; UI may report no match after 60–70 sec, then allow retry/cancel.
+- Next/rematch latency target: ≤1–2 sec with an eligible waiting peer. Empty-pool wait is open-ended with visible searching status and user cancel.
 - Test concurrency/races, stale presence, simultaneous Next, network loss, permission denial, TURN fallback, and safety exits.
 - Validate with at least two real accounts/devices and load tests before claiming production behavior.
 
