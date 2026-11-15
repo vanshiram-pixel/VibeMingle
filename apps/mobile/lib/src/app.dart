@@ -81,7 +81,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _HomeAction(icon: Icons.people_alt, title: 'Friends', subtitle: 'Find people and manage requests', onTap: () => context.go('/friends')),
               _HomeAction(icon: Icons.chat_bubble, title: 'Private Chats', subtitle: 'Open your messages', onTap: () => context.go('/messages')),
-              const _HomeAction(icon: Icons.video_call, title: 'Stranger Match', subtitle: 'Consent-based matching queue', onTap: () => context.go('/match')),
+              _HomeAction(icon: Icons.video_call, title: 'Stranger Match', subtitle: 'Consent-based matching queue', onTap: () => context.go('/match')),
             ],
           ),
         );
