@@ -65,7 +65,7 @@ class PresenceController {
   }
 
   void _publish() {
-    final state = _channel?.presenceState() ?? <String, List<Presence>>{};
+    final Map<String, List<Presence>> state = _channel?.presenceState() ?? <String, List<Presence>>{};
     final result = <String, FriendPresence>{};
     for (final entries in state.values) {
       for (final entry in entries) {
