@@ -45,7 +45,7 @@ class _CallRequestsScreenState extends State<CallRequestsScreen> {
     if (peer.isEmpty || _busy) return;
     setState(() => _busy = true);
     try {
-      final row = await _db.rpc('call_request_create', params: {'p_recipient': peer});
+      await _db.rpc('call_request_create', params: {'p_recipient': peer});
       _target.clear();
       _notice('Call request भेज दी गई।');
       await _refresh();
