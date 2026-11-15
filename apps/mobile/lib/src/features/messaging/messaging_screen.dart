@@ -324,6 +324,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
               );
             },
           )),
+        if (_peerTyping) const Padding(
+          padding: EdgeInsets.only(left: 16, bottom: 4),
+          child: Align(alignment: Alignment.centerLeft,
+            child: Text('Friend is typing…', style: TextStyle(fontStyle: FontStyle.italic))),
+        ),
         SafeArea(child: Padding(padding: const EdgeInsets.all(8),
           child: Row(children: [
             Expanded(child: TextField(controller: _input, onChanged: _onTypingChanged, minLines: 1, maxLines: 4,
