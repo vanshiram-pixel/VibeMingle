@@ -377,7 +377,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                             color: Theme.of(context).colorScheme.surface.withValues(alpha: .35),
                             borderRadius: BorderRadius.circular(8)),
                           child: Text(
-                            '↪ ${(message['reply_to_message'] as Map)['body'] ?? 'Reply'}',
+                            "↪ ${(message['reply_to_message'] as Map)['body'] ?? 'Reply'}",
                             maxLines: 2, overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 12)),
                         ),
