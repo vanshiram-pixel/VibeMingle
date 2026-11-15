@@ -135,7 +135,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   Future<void> _load() async {
     try {
       final rows = await _db.from('messages')
-        .select('id,sender_id,body,created_at,edited_at,deleted_at')
+        .select('id,sender_id,body,created_at,edited_at,deleted_at,message_reactions(user_id,emoji)')
         .eq('conversation_id', widget.conversationId).order('created_at');
       if (mounted) setState(() => _messages = List<Map<String, dynamic>>.from(rows));
       await _db.rpc('conversation_mark_read', params: {'p_conversation': widget.conversationId});
@@ -145,6 +145,30 @@ class _ConversationScreenState extends State<ConversationScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _toggleReaction(String messageId, String emoji) async {
+    final uid = _db.auth.currentUser!.id;
+    try {
+      final existing = await _db.from('message_reactions').select('message_id')
+        .eq('message_id', messageId).eq('user_id', uid).eq('emoji', emoji).maybeSingle();
+      if (existing != null) {
+        await _db.from('message_reactions').delete().eq('message_id', messageId).eq('user_id', uid).eq('emoji', emoji);
+      } else {
+        await _db.from('message_reactions').insert({'message_id': messageId, 'user_id': uid, 'emoji': emoji});
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Reaction नहीं लगी: $e')));
+    }
+  }
+
+  Future<void> _pickReaction(String messageId) async {
+    const choices = ['👍','❤️','😂','😮','😢','🙏','🔥','🎉'];
+    final emoji = await showModalBottomSheet<String>(context: context, builder: (ctx) =>
+      SafeArea(child: Wrap(spacing: 12, children: choices.map((e) => TextButton(
+        onPressed: () => Navigator.pop(ctx, e), child: Text(e, style: const TextStyle(fontSize: 26)))).toList()));
+    if (emoji != null) await _toggleReaction(messageId, emoji);
   }
 
   Future<void> _showEmojiPicker() async {
@@ -316,6 +340,22 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       mainAxisSize: MainAxisSize.min, children: [
                         Text(message['deleted_at'] != null ? 'Message deleted' :
                           message['body'].toString()),
+                        if (message['deleted_at'] == null) ...[
+                          const SizedBox(height: 5),
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            ...(() {
+                              final reactions = List<Map<String, dynamic>>.from(message['message_reactions'] ?? []);
+                              final counts = <String, int>{};
+                              for (final r in reactions) { final e = r['emoji'].toString(); counts[e] = (counts[e] ?? 0) + 1; }
+                              return counts.entries.map((e) => Padding(padding: const EdgeInsets.only(right: 3),
+                                child: InkWell(onTap: () => _toggleReaction(message['id'].toString(), e.key),
+                                  child: Chip(label: Text('${e.key} ${e.value}', style: const TextStyle(fontSize: 11)),
+                                    visualDensity: VisualDensity.compact, padding: EdgeInsets.zero))));
+                            })(),
+                            InkWell(onTap: () => _pickReaction(message['id'].toString()),
+                              child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.add_reaction_outlined, size: 17))),
+                          ]),
+                        ],
                         const SizedBox(height: 3),
                         Row(mainAxisSize: MainAxisSize.min, children: [
                           if (message['edited_at'] != null && message['deleted_at'] == null)
