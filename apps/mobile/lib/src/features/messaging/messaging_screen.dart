@@ -149,19 +149,34 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Future<void> _showEmojiPicker() async {
     const emojis = ['😀','😂','🥰','😍','😊','👍','❤️','🔥','🎉','🙏','😎','🤔','😭','🤣','🙌','💯'];
-    final emoji = await showModalBottomSheet<String>(context: context,
-      builder: (ctx) => SafeArea(child: Padding(padding: const EdgeInsets.all(12),
-        child: Wrap(spacing: 8, runSpacing: 8, children: emojis.map((e) =>
-          InkWell(onTap: () => Navigator.pop(ctx, e),
-            child: Padding(padding: const EdgeInsets.all(8), child: Text(e, style: const TextStyle(fontSize: 28))))
-          .toList()))));
+    final emoji = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: emojis.map<Widget>((e) => InkWell(
+              onTap: () => Navigator.pop(ctx, e),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Text(e, style: const TextStyle(fontSize: 28)),
+              ),
+            )).toList(),
+          ),
+        ),
+      ),
+    );
     if (emoji == null) return;
     final text = _input.text;
     final selection = _input.selection;
     final start = selection.isValid ? selection.start : text.length;
     final end = selection.isValid ? selection.end : text.length;
-    _input.value = TextEditingValue(text: text.replaceRange(start, end, emoji),
-      selection: TextSelection.collapsed(offset: start + emoji.length));
+    _input.value = TextEditingValue(
+      text: text.replaceRange(start, end, emoji),
+      selection: TextSelection.collapsed(offset: start + emoji.length),
+    );
   }
 
   Future<void> _send() async {
