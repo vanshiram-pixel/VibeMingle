@@ -20,6 +20,7 @@ class _MatchScreenState extends State<MatchScreen> {
   @override
   void dispose() {
     _heartbeat?.cancel();
+    _events?.cancel();
     super.dispose();
   }
 
@@ -76,14 +77,26 @@ class _MatchScreenState extends State<MatchScreen> {
   Future<void> _leave() async {
     _heartbeat?.cancel();
     await _repo.leave();
-    if (mounted) setState(() => _queued = false);
+    await _events?.cancel();
+    _events = null;
+    if (mounted) setState(() {
+      _queued = false;
+      _sessionId = null;
+      _sessionState = 'waiting';
+    });
   }
 
   Future<void> _revoke() async {
     _heartbeat?.cancel();
     if (_queued) await _repo.leave();
+    await _events?.cancel();
+    _events = null;
     await _repo.setConsent(enabled: false, version: 'v4.1-consent-1');
-    if (mounted) setState(() => _queued = false);
+    if (mounted) setState(() {
+      _queued = false;
+      _sessionId = null;
+      _sessionState = 'waiting';
+    });
   }
 
   @override
