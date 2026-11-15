@@ -8,6 +8,6 @@ begin
       and schemaname = 'public'
       and tablename = 'match_session_events'
   ) then
-    alter publication supabase_realtime add table public.match_session_events;
+    execute 'alter publication supabase_realtime add table public.match_session_events';
   end if;
 end $$;
