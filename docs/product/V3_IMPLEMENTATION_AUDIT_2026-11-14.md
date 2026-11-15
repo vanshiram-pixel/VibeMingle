@@ -124,3 +124,6 @@ This is a source/repository audit, not a live production or legal certification.
 
 
 - Final report UI/audit snapshot verification (2026-11-15): audit commit `05f0200b` completed successfully in Repository CI https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43672489017 and V3 CI https://github.com/vanshiram-pixel/VibeMingle/actions/runs/43672489038. This confirms repo checks and Flutter/API/Web/Admin build-analysis gates for this snapshot; it does not replace Android device testing or moderation queue operations.
+
+
+- Mobile messaging edit/delete UX increment (2026-11-15): long-press own message now opens actions for Edit or Delete; Edit uses authenticated `message_edit` RPC and refreshes the thread; Delete retains soft-delete RPC. Commit `087dffbe`. Awaiting CI verification; no Android device interaction performed.
