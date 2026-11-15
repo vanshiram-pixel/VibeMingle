@@ -22,7 +22,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
     final rows = await _db.from('conversation_members')
         .select('conversation_id,last_read_at,conversations(id,user_a,user_b,updated_at)')
         .eq('user_id', uid).order('last_read_at', ascending: false);
-    return List<Map<String, dynamic>>.from(rows);
+    final items = List<Map<String, dynamic>>.from(rows);\n    items.sort((a, b) {\n      final ca = a['conversations'] as Map<String, dynamic>?;\n      final cb = b['conversations'] as Map<String, dynamic>?;\n      final ta = DateTime.tryParse(ca?['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);\n      final tb = DateTime.tryParse(cb?['updated_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);\n      return tb.compareTo(ta);\n    });\n    return items;
   }
 
   Future<void> _openFriend() async {
