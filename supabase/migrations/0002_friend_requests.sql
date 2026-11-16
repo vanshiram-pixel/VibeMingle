@@ -67,7 +67,7 @@ begin
  if p_recipient_id is null or p_recipient_id=auth.uid() then raise exception 'invalid_recipient'; end if;
  if exists(select 1 from public.user_blocks b where
    (b.blocker_id=auth.uid() and b.blocked_id=p_recipient_id) or
-   (b.blocker_id=p_recipient_id and b.blocked_id=auth.uid()) then raise exception 'blocked'; end if;
+   (b.blocker_id=p_recipient_id and b.blocked_id=auth.uid())) then raise exception 'blocked'; end if;
  if exists(select 1 from public.friendships f where
    f.user_low=least(auth.uid(),p_recipient_id) and f.user_high=greatest(auth.uid(),p_recipient_id)) then
    raise exception 'already_friends'; end if;
