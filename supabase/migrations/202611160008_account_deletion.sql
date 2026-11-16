@@ -5,8 +5,9 @@ create table if not exists public.account_deletion_requests (
  status text not null default 'pending' check(status in ('pending','processing','completed','cancelled')),
  requested_at timestamptz not null default now(),
  processed_at timestamptz,
- unique(user_id,status)
-);
+ );
+create unique index if not exists account_deletion_active_user_idx
+ on public.account_deletion_requests(user_id) where status in ('pending','processing');
 alter table public.account_deletion_requests enable row level security;
 drop policy if exists account_deletion_requests_owner_read on public.account_deletion_requests;
 create policy account_deletion_requests_owner_read on public.account_deletion_requests
