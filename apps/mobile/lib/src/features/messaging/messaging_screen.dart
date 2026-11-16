@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../friends/friends_screen.dart';
+import '../profile/profile_screen.dart';
 
 class MessagingScreen extends StatefulWidget {
   const MessagingScreen({super.key});
@@ -68,6 +69,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Messages'), actions: [
+        IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => const ProfileScreen())), icon: const Icon(Icons.account_circle),
+          tooltip: 'My profile'),
         IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(
           builder: (_) => const FriendsScreen())), icon: const Icon(Icons.people_alt),
           tooltip: 'Friends & requests'),
