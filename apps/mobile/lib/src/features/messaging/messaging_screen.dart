@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../friends/friends_screen.dart';
+
 class MessagingScreen extends StatefulWidget {
   const MessagingScreen({super.key});
   @override
@@ -66,6 +68,9 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Messages'), actions: [
+        IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => const FriendsScreen())), icon: const Icon(Icons.people_alt),
+          tooltip: 'Friends & requests'),
         IconButton(onPressed: _openFriend, icon: const Icon(Icons.add_comment),
           tooltip: 'New chat')
       ]),
