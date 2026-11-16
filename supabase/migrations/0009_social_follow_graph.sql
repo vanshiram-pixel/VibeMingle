@@ -40,7 +40,7 @@ begin
  if auth.uid() is null then raise exception 'authentication_required'; end if;
  if p_user_id<>auth.uid() and exists(select 1 from public.user_blocks b where
   (b.blocker_id=auth.uid() and b.blocked_id=p_user_id) or
-  (b.blocker_id=p_user_id and b.blocked_id=auth.uid()) then raise exception 'blocked'; end if;
+  (b.blocker_id=p_user_id and b.blocked_id=auth.uid())) then raise exception 'blocked'; end if;
  return query select
  (select count(*) from public.user_follows f where f.followed_id=p_user_id),
  (select count(*) from public.user_follows f where f.follower_id=p_user_id);
