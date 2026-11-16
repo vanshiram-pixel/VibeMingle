@@ -6,6 +6,10 @@ android {
     namespace = "io.supabase.vibemingle"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
     defaultConfig {
         applicationId = "io.supabase.vibemingle"
         minSdk = flutter.minSdkVersion
