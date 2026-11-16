@@ -89,7 +89,7 @@ begin
  return found;
 end $$;
 
-revoke all on function public.chat_send(uuid,text,uuid),public.chat_mark_delivered(uuid),
+revoke all on function public.chat_send(uuid,text,text),public.chat_mark_delivered(uuid),
  public.chat_mark_read(uuid),public.chat_edit(uuid,text),public.chat_delete(uuid) from public,anon;
-grant execute on function public.chat_send(uuid,text,uuid),public.chat_mark_delivered(uuid),
+grant execute on function public.chat_send(uuid,text,text),public.chat_mark_delivered(uuid),
  public.chat_mark_read(uuid),public.chat_edit(uuid,text),public.chat_delete(uuid) to authenticated;
