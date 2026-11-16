@@ -52,6 +52,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
     () => _db.rpc('friend_accept', params: {'p_friend': peer}),
     'Friend request स्वीकार हुई।');
 
+  Future<void> _call(String peer, String type) async => _run(
+    () => _db.rpc('call_request_create', params: {'p_callee': peer, 'p_type': type}),
+    type == 'video' ? 'Video call request भेजी।' : 'Audio call request भेजी।');
+
   Future<void> _remove(String peer) async {
     final yes = await showDialog<bool>(context: context, builder: (ctx) =>
       AlertDialog(title: const Text('Remove friend?'),
