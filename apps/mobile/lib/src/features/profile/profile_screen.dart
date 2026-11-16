@@ -17,7 +17,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _saving = false;
   String? _error;
   String? _notice;
-  bool _confirmDelete = false;
 
   SupabaseClient get _db => Supabase.instance.client;
   User? get _user => _db.auth.currentUser;
