@@ -17,6 +17,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _saving = false;
   String? _error;
   String? _notice;
+  bool _confirmDelete = false;
 
   SupabaseClient get _db => Supabase.instance.client;
   User? get _user => _db.auth.currentUser;
@@ -148,6 +149,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   label: Text(_saving ? 'Saving…' : 'Save profile'),
                 ),
                 const Divider(height: 32),
+                ListTile(
+                  leading: const Icon(Icons.delete_forever_outlined, color: Colors.red),
+                  title: const Text('Delete account', style: TextStyle(color: Colors.red)),
+                  subtitle: const Text('यह स्थायी कार्रवाई है; account data deletion request'),
+                  onTap: _saving ? null : () async {
+                    final confirm = await showDialog<bool>(context: context, builder: (ctx) =>
+                      AlertDialog(title: const Text('Delete account?'),
+                        content: const Text('यह irreversible है। आगे बढ़ने पर deletion request भेजी जाएगी।'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Continue')),
+                        ]));
+                    if (confirm != true || !context.mounted) return;
+                    final reason = TextEditingController();
+                    final submitted = await showDialog<bool>(context: context, builder: (ctx) =>
+                      AlertDialog(title: const Text('Confirm account deletion'),
+                        content: TextField(controller: reason, decoration: const InputDecoration(
+                          labelText: 'Type DELETE to confirm')),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                          FilledButton(onPressed: () => Navigator.pop(ctx, reason.text.trim() == 'DELETE'),
+                            child: const Text('Submit request')),
+                        ]));
+                    reason.dispose();
+                    if (submitted != true || !context.mounted) return;
+                    try {
+                      await _db.rpc('account_deletion_request');
+                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Deletion request submitted. Support/admin will process it.')));
+                    } catch (e) {
+                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Request unavailable: apply account deletion migration first. $e')));
+                    }
+                  },
+                ),
                 const ListTile(leading: Icon(Icons.verified_user_outlined),
                   title: Text('Account security'), subtitle: Text('Google sign-in')),
                 const ListTile(leading: Icon(Icons.privacy_tip_outlined),
