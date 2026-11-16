@@ -39,7 +39,7 @@ begin
  if p_body is null or length(trim(p_body))=0 or char_length(p_body)>4000 then raise exception 'invalid_message'; end if;
  if exists(select 1 from public.user_blocks b where
    (b.blocker_id=auth.uid() and b.blocked_id=p_recipient_id) or
-   (b.blocker_id=p_recipient_id and b.blocked_id=auth.uid()) then raise exception 'blocked'; end if;
+   (b.blocker_id=p_recipient_id and b.blocked_id=auth.uid())) then raise exception 'blocked'; end if;
  if not exists(select 1 from public.friendships f where
    f.user_low=least(auth.uid(),p_recipient_id) and f.user_high=greatest(auth.uid(),p_recipient_id)) then
    raise exception 'friends_only'; end if;
