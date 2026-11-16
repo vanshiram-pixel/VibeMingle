@@ -7,7 +7,7 @@ export default function AuthPage(){
  const [busy,setBusy]=useState(false);const [notice,setNotice]=useState("");
  async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);setNotice("");
  try{const supabase=createSupabaseBrowserClient();if(mode==="signup"){
- const {error}=await supabase.auth.signUp({email,password,options:{data:{display_name:name},emailRedirectTo:location.origin+"/auth"}});
+ const {error}=await supabase.auth.signUp({email,password,options:{data:{display_name:name,name,full_name:name},emailRedirectTo:location.origin+"/auth"}});
  if(error)throw error;setNotice("Account request created. Check your email to verify and continue.");
  }else{const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;location.href="/app";}
  }catch(err){setNotice(err instanceof Error?err.message:"Authentication failed");}finally{setBusy(false)}}
