@@ -119,8 +119,20 @@ class _FriendsScreenState extends State<FriendsScreen> {
               return ListTile(leading: const CircleAvatar(child: Icon(Icons.person)),
                 title: Text('Friend • ${peer.substring(0, 8)}…'),
                 subtitle: const Text('Connected'),
-                trailing: IconButton(onPressed: _busy ? null : () => _remove(peer),
-                  icon: const Icon(Icons.person_remove_alt_1), tooltip: 'Remove friend'));
+                trailing: PopupMenuButton<String>(
+                  enabled: !_busy,
+                  tooltip: 'Friend actions',
+                  onSelected: (action) {
+                    if (action == 'audio') _call(peer, 'audio');
+                    if (action == 'video') _call(peer, 'video');
+                    if (action == 'remove') _remove(peer);
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'audio', child: Text('Audio call')),
+                    PopupMenuItem(value: 'video', child: Text('Video call')),
+                    PopupMenuItem(value: 'remove', child: Text('Remove friend')),
+                  ],
+                ));
             }),
             if (rows.any((r) => r['status'] == 'pending' && r['requested_by'] == _uid))
               const ListTile(title: Text('Outgoing requests'), subtitle: Text('आपकी भेजी हुई requests pending हैं।')),
