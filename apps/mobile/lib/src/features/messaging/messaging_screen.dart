@@ -126,6 +126,60 @@ class _ConversationScreenState extends State<ConversationScreen> {
     } catch (_) { if (mounted) setState(() => _loading = false); }
   }
 
+  Future<void> _editMessage(Map<String, dynamic> message) async {
+    final controller = TextEditingController(text: message['body']?.toString() ?? '');
+    final body = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Edit message'),
+      content: TextField(controller: controller, autofocus: true, maxLines: 5, minLines: 1),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Save')),
+      ],
+    ));
+    controller.dispose();
+    if (body == null || body.isEmpty || body == message['body']) return;
+    try {
+      await _db.rpc('message_edit', params: {'p_message': message['id'], 'p_body': body});
+      await _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Edit failed: $e')));
+    }
+  }
+
+  Future<void> _deleteMessage(Map<String, dynamic> message) async {
+    final yes = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Delete message?'),
+      content: const Text('यह message हटाया जाएगा।'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+      ],
+    ));
+    if (yes != true) return;
+    try {
+      await _db.rpc('message_delete', params: {'p_message': message['id']});
+      await _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+    }
+  }
+
+  Future<void> _reportMessage(Map<String, dynamic> message) async {
+    const categories = ['harassment', 'sexual_content', 'spam', 'hate', 'violence', 'scam', 'other'];
+    final category = await showDialog<String>(context: context, builder: (ctx) => SimpleDialog(
+      title: const Text('Report message'),
+      children: categories.map((c) => SimpleDialogOption(
+        onPressed: () => Navigator.pop(ctx, c), child: Text(c.replaceAll('_', ' ')))).toList(),
+    ));
+    if (category == null) return;
+    try {
+      await _db.rpc('message_report', params: {'p_message': message['id'], 'p_category': category, 'p_description': ''});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report failed: $e')));
+    }
+  }
+
   Future<void> _send() async {
     final body = _input.text.trim();
     if (body.isEmpty || _sending) return;
@@ -154,11 +208,32 @@ class _ConversationScreenState extends State<ConversationScreen> {
         ListView.builder(itemCount: _messages.length, itemBuilder: (context, i) {
           final m = _messages[i];
           final mine = m['sender_id'] == _db.auth.currentUser!.id;
+          final deleted = m['deleted_at'] != null;
           return Align(alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(margin: const EdgeInsets.all(6), padding: const EdgeInsets.all(12),
+            child: Container(margin: const EdgeInsets.all(6), padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(color: mine ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12)),
-              child: Text(m['deleted_at'] == null ? m['body'].toString() : 'Message deleted'));
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(deleted ? 'Message deleted' : m['body'].toString()),
+                  if (!deleted && m['edited_at'] != null)
+                    Text('edited', style: Theme.of(context).textTheme.labelSmall),
+                ])),
+                if (!deleted) PopupMenuButton<String>(
+                  tooltip: 'Message actions', iconSize: 18, padding: EdgeInsets.zero,
+                  onSelected: (action) {
+                    if (action == 'edit') _editMessage(m);
+                    if (action == 'delete') _deleteMessage(m);
+                    if (action == 'report') _reportMessage(m);
+                  },
+                  itemBuilder: (_) => [
+                    if (mine) const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    if (mine) const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    if (!mine) const PopupMenuItem(value: 'report', child: Text('Report')),
+                  ],
+                ),
+              ]),
+            ));
         })),
       SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
         Expanded(child: TextField(controller: _input, textInputAction: TextInputAction.send, onSubmitted: (_) => _send(),
