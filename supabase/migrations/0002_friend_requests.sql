@@ -98,7 +98,7 @@ begin
  if v_req.status<>'pending' then raise exception 'request_not_pending'; end if;
  if exists(select 1 from public.user_blocks b where
    (b.blocker_id=auth.uid() and b.blocked_id=v_req.sender_id) or
-   (b.blocker_id=v_req.sender_id and b.blocked_id=auth.uid()) then raise exception 'blocked'; end if;
+   (b.blocker_id=v_req.sender_id and b.blocked_id=auth.uid())) then raise exception 'blocked'; end if;
  update public.friend_requests set status=case when p_accept then 'accepted' else 'rejected' end,
  responded_at=now() where id=p_request_id returning * into v_req;
  if p_accept then
