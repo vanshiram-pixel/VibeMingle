@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../discovery/discovery_screen.dart';
 import '../friends/friends_screen.dart';
-import '../profile/profile_screen.dart';\nimport '../matching/matching_screen.dart';
+import '../profile/profile_screen.dart';\nimport '../matching/matching_screen.dart';\nimport '../calls/calls_screen.dart';
 
 class MessagingScreen extends StatefulWidget {
   const MessagingScreen({super.key});
@@ -69,7 +69,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
         icon: const Icon(Icons.account_circle), tooltip: 'My profile'),
       IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen())),
         icon: const Icon(Icons.people_alt), tooltip: 'Friends & requests'),
-      IconButton(onPressed: _openFriend, icon: const Icon(Icons.add_comment), tooltip: 'New chat')
+      IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CallsScreen())),\n        icon: const Icon(Icons.call), tooltip: 'Private calls'),\n      IconButton(onPressed: _openFriend, icon: const Icon(Icons.add_comment), tooltip: 'New chat')
     ]),
     body: FutureBuilder<List<Map<String, dynamic>>>(future: _future, builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
