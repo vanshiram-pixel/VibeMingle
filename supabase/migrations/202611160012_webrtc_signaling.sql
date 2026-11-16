@@ -11,6 +11,12 @@ create table if not exists public.call_signals (
 );
 create index if not exists call_signals_call_recent_idx on public.call_signals(call_id,created_at);
 alter table public.call_signals enable row level security;
+-- Enable realtime delivery idempotently; clients subscribe only to participant-visible rows.
+do $ begin
+ if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='call_signals') then
+  execute 'alter publication supabase_realtime add table public.call_signals';
+ end if;
+end $;
 drop policy if exists call_signals_participant_read on public.call_signals;
 create policy call_signals_participant_read on public.call_signals for select to authenticated
  using(auth.uid() in(sender_id,recipient_id) and exists(select 1 from public.call_requests c where c.id=call_id and auth.uid() in(c.caller_id,c.callee_id)));
@@ -23,7 +29,7 @@ declare me uuid:=auth.uid(); peer uuid; cid uuid;
 begin
  if me is null then raise exception 'authentication required' using errcode='28000'; end if;
  if p_type not in ('offer','answer','ice') then raise exception 'invalid signal type' using errcode='22023'; end if;
- if p_payload is null or octet_length(p_payload::text)>12000 then raise exception 'signal payload too large' using errcode='22023'; end if;
+ if p_payload is null or jsonb_typeof(p_payload)<>'object' or p_payload='{}'::jsonb or octet_length(p_payload::text)>12000 then raise exception 'invalid or oversized signal payload' using errcode='22023'; end if;
  select case when caller_id=me then callee_id else caller_id end into peer
  from public.call_requests where id=p_call and me in(caller_id,callee_id) and status='accepted';
  if peer is null or peer<>p_recipient then raise exception 'accepted call or recipient invalid' using errcode='42501'; end if;
