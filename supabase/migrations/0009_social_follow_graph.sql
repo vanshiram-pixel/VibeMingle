@@ -22,7 +22,7 @@ begin
  if p_user_id is null or p_user_id=auth.uid() then raise exception 'invalid_user'; end if;
  if exists(select 1 from public.user_blocks b where
   (b.blocker_id=auth.uid() and b.blocked_id=p_user_id) or
-  (b.blocker_id=p_user_id and b.blocked_id=auth.uid()) then raise exception 'blocked'; end if;
+  (b.blocker_id=p_user_id and b.blocked_id=auth.uid())) then raise exception 'blocked'; end if;
  insert into public.user_follows(follower_id,followed_id) values(auth.uid(),p_user_id) on conflict do nothing;
  return true;
 end $$;
