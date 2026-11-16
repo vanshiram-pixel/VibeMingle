@@ -128,7 +128,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     child: const Text('Accept')),
                   IconButton(onPressed: _busy ? null : () => _reject(peer),
                     tooltip: 'Reject request', icon: const Icon(Icons.close)),
-                ])));
+                ]));
             }),
             if (accepted.isNotEmpty) const ListTile(title: Text('Friends')),
             ...accepted.map((r) {
