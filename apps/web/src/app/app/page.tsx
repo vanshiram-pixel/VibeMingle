@@ -1,6 +1,9 @@
 "use client";
 import {useEffect,useState} from "react";
-import {createSupabaseBrowserClient} from "@/lib/supabase";\nimport WebChat from "./chat";\nimport WebFriends from "./friends";\nimport WebDiscover from "./discover";
+import {createSupabaseBrowserClient} from "@/lib/supabase";
+import WebChat from "./chat";
+import WebFriends from "./friends";
+import WebDiscover from "./discover";
 type User={id:string;email?:string};
 export default function AppHome(){const [user,setUser]=useState<User|null>(null);const [loading,setLoading]=useState(true);const [error,setError]=useState("");
  useEffect(()=>{let active=true;try{const db=createSupabaseBrowserClient();db.auth.getUser().then(({data,error})=>{if(!active)return;if(error)setError(error.message);setUser(data.user?{id:data.user.id,email:data.user.email}:null);setLoading(false)});const {data}=db.auth.onAuthStateChange((_event,session)=>{if(active)setUser(session?.user?{id:session.user.id,email:session.user.email}:null)});return()=>{active=false;data.subscription.unsubscribe()}}catch(e){setError(e instanceof Error?e.message:"Supabase setup missing");setLoading(false)}},[]);
