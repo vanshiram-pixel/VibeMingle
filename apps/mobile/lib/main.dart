@@ -4,8 +4,16 @@ import 'src/app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  const url = String.fromEnvironment('SUPABASE_URL');
-  const publishableKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: String.fromEnvironment('SUPABASE_ANON_KEY'));
+  // VibeMingle production Supabase project (publishable key is safe for client apps).
+  // Build-time dart-define values can override these defaults for staging/local builds.
+  const url = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://jkalrdnimvoqmggydeuv.supabase.co',
+  );
+  const publishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: 'sb_publishable_1rNuqIxSjicVZANNQU7MbQ_jnNorHtV',
+  );
   if (url.isNotEmpty && publishableKey.isNotEmpty) {
     await Supabase.initialize(url: url, publishableKey: publishableKey);
   }
