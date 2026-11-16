@@ -59,6 +59,43 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
     }
   }
 
+  Future<void> _blockUser(String id) async {
+    final yes = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Block this user?'),
+      content: const Text('यह व्यक्ति आपको friend request या message नहीं भेज पाएगा। मौजूदा friendship हट जाएगी।'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Block')),
+      ],
+    ));
+    if (yes != true) return;
+    try {
+      await _db.rpc('user_block', params: {'p_user': id});
+      if (mounted) {
+        setState(() => _results.removeWhere((p) => p['id'].toString() == id));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User blocked')));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Block failed: $e')));
+    }
+  }
+
+  Future<void> _reportUser(String id) async {
+    const categories = ['harassment','sexual_content','minor_safety','spam','hate','violence','impersonation','scam','other'];
+    final category = await showDialog<String>(context: context, builder: (ctx) => SimpleDialog(
+      title: const Text('Report profile'),
+      children: categories.map((c) => SimpleDialogOption(
+        onPressed: () => Navigator.pop(ctx, c), child: Text(c.replaceAll('_', ' ')))).toList(),
+    ));
+    if (category == null) return;
+    try {
+      await _db.rpc('user_report', params: {'p_user': id, 'p_category': category, 'p_description': ''});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report failed: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Discover people')),
