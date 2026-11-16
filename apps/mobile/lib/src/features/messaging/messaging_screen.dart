@@ -62,7 +62,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Messages'), actions: [\n      IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MatchingScreen())),\n        icon: const Icon(Icons.travel_explore), tooltip: 'Meet someone');
+    appBar: AppBar(title: const Text('Messages'), actions: [\n      IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MatchingScreen())),\n        icon: const Icon(Icons.travel_explore), tooltip: 'Meet someone'),
       IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DiscoveryScreen())),
         icon: const Icon(Icons.explore_outlined), tooltip: 'Discover'),
       IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
