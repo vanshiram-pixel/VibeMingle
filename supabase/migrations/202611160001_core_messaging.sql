@@ -59,7 +59,7 @@ drop policy if exists conversations_member_select on public.conversations;
 create policy conversations_member_select on public.conversations
   for select to authenticated using (
     exists (select 1 from public.conversation_members cm
-      where cm.conversation_id = id and cm.user_id = auth.uid())
+      where cm.conversation_id = conversations.id and cm.user_id = auth.uid())
   );
 
 drop policy if exists conversation_members_self_select on public.conversation_members;
@@ -70,7 +70,7 @@ drop policy if exists messages_member_select on public.messages;
 create policy messages_member_select on public.messages
   for select to authenticated using (
     exists (select 1 from public.conversation_members cm
-      where cm.conversation_id = conversation_id and cm.user_id = auth.uid())
+      where cm.conversation_id = messages.conversation_id and cm.user_id = auth.uid())
   );
 
 drop policy if exists reports_reporter_select on public.message_reports;
