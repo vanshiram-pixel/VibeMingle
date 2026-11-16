@@ -23,13 +23,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
   }
 
   Future<List<Map<String, dynamic>>> _load() async {
-    final rows = await _db.from('friendships').select('user_a,user_b,status,created_at')
-      .or('user_a.eq.$_uid,user_b.eq.$_uid').order('created_at', ascending: false);
+    final rows = await _db.from('friendships').select('user_low,user_high,requested_by,status,created_at')
+      .or('user_low.eq.$_uid,user_high.eq.$_uid').order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(rows);
   }
 
   String _peer(Map<String, dynamic> row) =>
-      row['user_a'] == _uid ? row['user_b'].toString() : row['user_a'].toString();
+      row['user_low'] == _uid ? row['user_high'].toString() : row['user_low'].toString();
 
   Future<void> _request() async {
     final ctrl = TextEditingController();
@@ -95,7 +95,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         if (snapshot.hasError)
           return Center(child: Text('Friends load नहीं हुए: ${snapshot.error}'));
         final rows = snapshot.data ?? [];
-        final incoming = rows.where((r) => r['status'] == 'pending' && r['user_b'] == _uid).toList();
+        final incoming = rows.where((r) => r['status'] == 'pending' && r['requested_by'] != _uid).toList();
         final accepted = rows.where((r) => r['status'] == 'accepted').toList();
         if (rows.isEmpty) return const Center(child: Text('अभी कोई friend या request नहीं। + से request भेजें।'));
         return ListView(
@@ -118,7 +118,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 trailing: IconButton(onPressed: _busy ? null : () => _remove(peer),
                   icon: const Icon(Icons.person_remove_alt_1), tooltip: 'Remove friend'));
             }),
-            if (rows.any((r) => r['status'] == 'pending' && r['user_a'] == _uid))
+            if (rows.any((r) => r['status'] == 'pending' && r['requested_by'] == _uid))
               const ListTile(title: Text('Outgoing requests'), subtitle: Text('आपकी भेजी हुई requests pending हैं।')),
           ],
         );
