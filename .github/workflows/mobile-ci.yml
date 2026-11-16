@@ -25,12 +25,17 @@ jobs:
         with:
           channel: stable
           cache: true
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+      - name: Generate Flutter-compatible Gradle wrapper
+        working-directory: apps/mobile/android
+        run: gradle wrapper --gradle-version 9.3.1
       - run: flutter pub get
       - run: dart format lib test
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug --dart-define=SUPABASE_URL=https://example.supabase.co --dart-define=SUPABASE_ANON_KEY=ci-placeholder
-
       - uses: actions/upload-artifact@v4
         if: success()
         with:
