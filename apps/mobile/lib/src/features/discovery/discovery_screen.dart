@@ -85,10 +85,20 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
               ? p['display_name'] as String : '@${p['username']}'),
             subtitle: Text('@${p['username']} • ${p['bio'] ?? ''}', maxLines: 2,
               overflow: TextOverflow.ellipsis),
-            trailing: IconButton(
-              icon: Icon(_requested.contains(p['id'].toString()) ? Icons.check_circle : Icons.person_add_alt_1),
-              tooltip: _requested.contains(p['id'].toString()) ? 'Request sent' : 'Add friend',
-              onPressed: _requested.contains(p['id'].toString()) ? null : () => _sendRequest(p['id'].toString())),
+            trailing: PopupMenuButton<String>(
+              onSelected: (action) {
+                final id = p['id'].toString();
+                if (action == 'friend') _sendRequest(id);
+                if (action == 'report') _reportUser(id);
+                if (action == 'block') _blockUser(id);
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'friend', child: Text(_requested.contains(p['id'].toString()) ? 'Request sent' : 'Add friend')),
+                const PopupMenuItem(value: 'report', child: Text('Report profile')),
+                const PopupMenuItem(value: 'block', child: Text('Block user')),
+              ],
+              icon: const Icon(Icons.more_vert),
+            ),
           );
         })),
     ]),
