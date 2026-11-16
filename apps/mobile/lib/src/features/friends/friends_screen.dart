@@ -52,6 +52,19 @@ class _FriendsScreenState extends State<FriendsScreen> {
     () => _db.rpc('friend_accept', params: {'p_friend': peer}),
     'Friend request स्वीकार हुई।');
 
+  Future<void> _reject(String peer) async {
+    final yes = await showDialog<bool>(context: context, builder: (ctx) =>
+      AlertDialog(title: const Text('Reject request?'),
+        content: const Text('यह friend request हट जाएगी।'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reject')),
+        ]));
+    if (yes == true) await _run(
+      () => _db.rpc('friend_remove', params: {'p_friend': peer}),
+      'Friend request अस्वीकार की गई।');
+  }
+
   Future<void> _call(String peer, String type) async => _run(
     () => _db.rpc('call_request_create', params: {'p_callee': peer, 'p_type': type}),
     type == 'video' ? 'Video call request भेजी।' : 'Audio call request भेजी।');
@@ -110,8 +123,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
               return ListTile(leading: const CircleAvatar(child: Icon(Icons.person_add)),
                 title: Text('Request • ${peer.substring(0, 8)}…'),
                 subtitle: const Text('Pending'),
-                trailing: FilledButton(onPressed: _busy ? null : () => _accept(peer),
-                  child: const Text('Accept')));
+                trailing: Wrap(spacing: 6, children: [
+                  FilledButton(onPressed: _busy ? null : () => _accept(peer),
+                    child: const Text('Accept')),
+                  IconButton(onPressed: _busy ? null : () => _reject(peer),
+                    tooltip: 'Reject request', icon: const Icon(Icons.close)),
+                ])));
             }),
             if (accepted.isNotEmpty) const ListTile(title: Text('Friends')),
             ...accepted.map((r) {
