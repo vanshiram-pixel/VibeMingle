@@ -105,6 +105,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   Timer? timer;
   bool busy = false;
   bool peerTyping = false;
+  final Set<String> acknowledgedMessageIds = {};
 
   @override
   void initState() {
@@ -112,6 +113,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     refresh();
     sub = repo.watch(widget.peerId).listen((m) {
       if (mounted) setState(() => upsert(m));
+      acknowledgeIncoming(m);
     });
     final uid = Supabase.instance.client.auth.currentUser!.id;
     typing = Supabase.instance.client
@@ -125,6 +127,16 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
           },
         )
         .subscribe();
+  }
+
+  void acknowledgeIncoming(Map<String, dynamic> message) {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final id = message['id']?.toString();
+    if (uid == null || id == null || message['sender_id'] == uid ||
+        message['deleted_at'] != null || !acknowledgedMessageIds.add(id)) return;
+    // Delivery/read receipts are best-effort; message rendering must not wait on RPCs.
+    unawaited(repo.delivered(id).catchError((_) {}));
+    unawaited(repo.read(id).catchError((_) {}));
   }
 
   void upsert(Map<String, dynamic> message) {
@@ -145,6 +157,9 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
         rows
           ..clear()
           ..addAll(messages);
+        for (final message in messages) {
+          acknowledgeIncoming(message);
+        }
       });
     } catch (e) {
       if (mounted) {
@@ -195,6 +210,12 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     input.dispose();
     sub?.cancel();
     timer?.cancel();
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid != null) {
+      unawaited(typing?.sendBroadcastMessage(
+        event: 'typing', payload: {'user_id': uid, 'typing': false},
+      ));
+    }
     if (typing != null) Supabase.instance.client.removeChannel(typing!);
     super.dispose();
   }
