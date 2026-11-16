@@ -31,7 +31,7 @@ create table if not exists public.messages (
   created_at timestamptz not null default now(),
   edited_at timestamptz,
   deleted_at timestamptz,
-  constraint messages_body_length check (char_length(body) between 1 and 4000)
+  constraint messages_body_length check ((deleted_at is not null and body = '') or char_length(body) between 1 and 4000)
 );
 
 create index if not exists messages_conversation_created_idx
@@ -204,6 +204,8 @@ begin
   end if;
   insert into public.message_reports(message_id,reporter_id,category,description)
     values(p_message,auth.uid(),p_category,left(coalesce(p_description,''),1000))
+    on conflict (message_id,reporter_id) do update set category = excluded.category,
+      description = excluded.description
     returning id into v_report;
   return v_report;
 end;
