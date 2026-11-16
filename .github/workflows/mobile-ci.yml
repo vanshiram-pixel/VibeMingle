@@ -26,3 +26,11 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug --dart-define=SUPABASE_URL=https://example.supabase.co --dart-define=SUPABASE_ANON_KEY=ci-placeholder
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: vibemingle-debug-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
