@@ -199,7 +199,7 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
             payload['sdpMid']?.toString(),
             (payload['sdpMLineIndex'] as num?)?.toInt(),
           );
-          if (pc.remoteDescription == null) {
+          if (await pc.getRemoteDescription() == null) {
             _pendingIce.add(candidate);
           } else {
             await pc.addCandidate(candidate);
