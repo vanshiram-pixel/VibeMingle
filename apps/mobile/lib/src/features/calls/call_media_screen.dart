@@ -92,6 +92,8 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
             'candidate': candidate.candidate,
             'sdpMid': candidate.sdpMid,
             'sdpMLineIndex': candidate.sdpMLineIndex,
+          }).catchError((Object error) {
+            if (mounted) setState(() => _status = 'ICE signaling failed: $error');
           }));
         }
       };
@@ -226,8 +228,14 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
   Future<void> _end() async {
     try {
       await _db.rpc('call_request_end', params: {'p_call': widget.call['id']});
-    } catch (_) {}
-    if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Call could not be ended: $error')),
+        );
+      }
+    }
   }
 
   @override
