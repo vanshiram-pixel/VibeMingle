@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'call_media_screen.dart';
 
 /// Private call invitations and lifecycle. WebRTC media is not yet wired here.
 class CallsScreen extends StatefulWidget {
@@ -50,10 +51,19 @@ class _CallsScreenState extends State<CallsScreen> {
     setState(()=>_busy=true);
     try {
       await _db.rpc('call_request_respond',params:{'p_call':id,'p_accept':accept});
-      if(mounted) setState(()=>_notice=accept?'Call accepted. Media connection is a separate step.':'Call declined.');
+      if(mounted) setState(()=>_notice=accept?'Call accepted. Opening secure media…':'Call declined.');
       await _load();
+      if (accept && mounted) {
+        final call = _calls.firstWhere((item) => item['id'].toString() == id, orElse: () => <String,dynamic>{});
+        if (call.isNotEmpty) await _openMedia(call);
+      }
     } catch(e) { if(mounted) setState(()=>_error=e.toString()); }
     finally { if(mounted) setState(()=>_busy=false); }
+  }
+
+  Future<void> _openMedia(Map<String,dynamic> call) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => CallMediaScreen(call: call)));
+    await _load();
   }
 
   Future<void> _cancel(String id) async {
@@ -99,10 +109,13 @@ class _CallsScreenState extends State<CallsScreen> {
           trailing:active?Wrap(children:[
             IconButton(onPressed:_busy?null:()=>_respond(c['id'].toString(),true),icon:const Icon(Icons.check,color:Colors.green),tooltip:'Accept'),
             IconButton(onPressed:_busy?null:()=>_respond(c['id'].toString(),false),icon:const Icon(Icons.close),tooltip:'Decline'),
-          ]):st=='ringing'&&!incoming?IconButton(onPressed:()=>_cancel(c['id'].toString()),icon:const Icon(Icons.cancel),tooltip:'Cancel'):st=='accepted'?IconButton(onPressed:()=>_end(c['id'].toString()),icon:const Icon(Icons.call_end),tooltip:'End'):null,
+          ]):st=='ringing'&&!incoming?IconButton(onPressed:()=>_cancel(c['id'].toString()),icon:const Icon(Icons.cancel),tooltip:'Cancel'):st=='accepted'?Wrap(children:[
+            IconButton(onPressed:()=>_openMedia(c),icon:const Icon(Icons.video_camera_front),tooltip:'Open call'),
+            IconButton(onPressed:()=>_end(c['id'].toString()),icon:const Icon(Icons.call_end),tooltip:'End'),
+          ]):null,
         ));
       }),
-      const Padding(padding:EdgeInsets.only(top:12),child:Text('Note: invitations and accept/decline are implemented. Live audio/video media (WebRTC) is not connected yet.')),
+      
     ]),
   );
 }
