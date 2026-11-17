@@ -135,6 +135,13 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
       }
       if (mounted) setState(() => _busy = false);
     } catch (error) {
+      // Do not leave camera/microphone active after a partial setup failure.
+      await _pc?.close();
+      _pc = null;
+      _stream?.getTracks().forEach((track) => track.stop());
+      _stream = null;
+      _local.srcObject = null;
+      _remote.srcObject = null;
       if (mounted) setState(() {
         _status = 'Media setup failed: $error';
         _busy = false;
