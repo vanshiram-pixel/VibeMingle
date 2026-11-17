@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -114,15 +116,28 @@ class _ConversationScreenState extends State<ConversationScreen> {
   List<Map<String, dynamic>> _messages = [];
   bool _loading = true, _sending = false;
   RealtimeChannel? _channel;
+  Timer? _readReceiptTimer;
+  DateTime? _peerReadAt;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _readReceiptTimer = Timer.periodic(const Duration(seconds: 15), (_) => _refreshPeerReadAt());
     _channel = _db.channel('messages-${widget.conversationId}')
       .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public', table: 'messages',
         filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'conversation_id', value: widget.conversationId),
         callback: (_) => _load()).subscribe();
+  }
+
+  Future<void> _refreshPeerReadAt() async {
+    try {
+      final value = await _db.rpc('conversation_peer_read_at', params: {'p_conversation': widget.conversationId});
+      if (!mounted) return;
+      setState(() => _peerReadAt = value == null ? null : DateTime.tryParse(value.toString()));
+    } catch (_) {
+      // Read receipts are best-effort; messaging must continue if unavailable.
+    }
   }
 
   Future<void> _load() async {
@@ -131,6 +146,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
         .eq('conversation_id', widget.conversationId).order('created_at');
       if (mounted) setState(() { _messages = List<Map<String, dynamic>>.from(rows); _loading = false; });
       await _db.rpc('conversation_mark_read', params: {'p_conversation': widget.conversationId});
+      await _refreshPeerReadAt();
     } catch (_) { if (mounted) setState(() => _loading = false); }
   }
 
@@ -203,6 +219,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   @override
   void dispose() {
+    _readReceiptTimer?.cancel();
     _input.dispose();
     if (_channel != null) _db.removeChannel(_channel!);
     super.dispose();
@@ -226,6 +243,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   Text(deleted ? 'Message deleted' : m['body'].toString()),
                   if (!deleted && m['edited_at'] != null)
                     Text('edited', style: Theme.of(context).textTheme.labelSmall),
+                  if (mine && !deleted && _peerReadAt != null &&
+                      (DateTime.tryParse(m['created_at'].toString())?.isBefore(_peerReadAt!) ?? false ||
+                       DateTime.tryParse(m['created_at'].toString())?.isAtSameMomentAs(_peerReadAt!) == true))
+                    Text('Seen', style: Theme.of(context).textTheme.labelSmall),
                 ])),
                 if (!deleted) PopupMenuButton<String>(
                   tooltip: 'Message actions', iconSize: 18, padding: EdgeInsets.zero,
