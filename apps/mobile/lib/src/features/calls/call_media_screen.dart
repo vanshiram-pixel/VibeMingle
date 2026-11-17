@@ -87,6 +87,7 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
       } catch (_) {
         // Keep STUN fallback while TURN credentials are unavailable.
       }
+      if (_disposed) return;
       final pc = await createPeerConnection({
         'iceServers': iceServers,
         'sdpSemantics': 'unified-plan',
