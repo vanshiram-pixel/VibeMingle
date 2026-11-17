@@ -71,10 +71,24 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
       }
       _stream = stream;
       _local.srcObject = stream;
+      var iceServers = <Map<String, dynamic>>[
+        {'urls': 'stun:stun.l.google.com:19302'},
+      ];
+      try {
+        final iceConfig = await _db.functions.invoke('rtc-ice-servers');
+        final data = iceConfig.data;
+        if (data is Map && data['iceServers'] is List) {
+          iceServers = List<Map<String, dynamic>>.from(
+            (data['iceServers'] as List).map(
+              (server) => Map<String, dynamic>.from(server as Map),
+            ),
+          );
+        }
+      } catch (_) {
+        // Keep STUN fallback while TURN credentials are unavailable.
+      }
       final pc = await createPeerConnection({
-        'iceServers': [
-          {'urls': 'stun:stun.l.google.com:19302'}
-        ],
+        'iceServers': iceServers,
         'sdpSemantics': 'unified-plan',
       });
       _pc = pc;
