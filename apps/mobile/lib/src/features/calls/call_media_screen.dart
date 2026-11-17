@@ -59,6 +59,7 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
     try {
       await _local.initialize();
       await _remote.initialize();
+      if (_disposed) return;
       final stream = await navigator.mediaDevices.getUserMedia({
         'audio': true,
         'video': _video
@@ -92,6 +93,11 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
         'iceServers': iceServers,
         'sdpSemantics': 'unified-plan',
       });
+      if (_disposed) {
+        await pc.close();
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       _pc = pc;
       for (final track in stream.getTracks()) {
         await pc.addTrack(track, stream);
