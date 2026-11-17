@@ -1,7 +1,7 @@
 name: Mobile CI
 
 concurrency:
-  group: mobile-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: mobile-ci-${{ github.event.pull_request.head.ref || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -19,6 +19,7 @@ on:
 jobs:
   flutter:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: apps/mobile
