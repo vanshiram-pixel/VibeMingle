@@ -18,6 +18,7 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
   final _remote = RTCVideoRenderer();
   final _seen = <String>{};
   final _pendingIce = <RTCIceCandidate>[];
+  Future<void> _signalQueue = Future<void>.value();
   RTCPeerConnection? _pc;
   MediaStream? _stream;
   RealtimeChannel? _channel;
@@ -112,7 +113,7 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
             value: widget.call['id'].toString(),
           ),
           callback: (payload) {
-            unawaited(_apply(Map<String, dynamic>.from(payload.newRecord)));
+            unawaited(_enqueueSignal(Map<String, dynamic>.from(payload.newRecord)));
           },
         )
         .subscribe();
@@ -124,7 +125,7 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
           .eq('recipient_id', _me)
           .order('created_at');
       for (final row in existing) {
-        await _apply(Map<String, dynamic>.from(row));
+        await _enqueueSignal(Map<String, dynamic>.from(row));
       }
 
       if (widget.call['caller_id'] == _me) {
@@ -161,6 +162,13 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
     if (result == null) {
       // RPC returns a UUID on success; a null response is not expected.
     }
+  }
+
+  Future<void> _enqueueSignal(Map<String, dynamic> row) {
+    _signalQueue = _signalQueue.then((_) => _apply(row)).catchError((Object error) {
+      if (mounted) setState(() => _status = 'Signaling queue error: $error');
+    });
+    return _signalQueue;
   }
 
   Future<void> _apply(Map<String, dynamic> row) async {
