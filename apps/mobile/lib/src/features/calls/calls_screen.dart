@@ -52,11 +52,17 @@ class _CallsScreenState extends State<CallsScreen> {
     try {
       await _db.rpc('call_request_respond',params:{'p_call':id,'p_accept':accept});
       if(mounted) setState(()=>_notice=accept?'Call accepted. Opening secure media…':'Call declined.');
-      await _load();
       if (accept && mounted) {
-        final call = _calls.firstWhere((item) => item['id'].toString() == id, orElse: () => <String,dynamic>{});
-        if (call.isNotEmpty) await _openMedia(call);
+        // Read the accepted row directly; setState in _load is asynchronous,
+        // so _calls may still contain the pre-accept snapshot here.
+        final call = await _db.from('call_requests')
+          .select('id,caller_id,callee_id,call_type,status,created_at')
+          .eq('id',id).maybeSingle();
+        if (call != null && mounted && call['status'] == 'accepted') {
+          await _openMedia(Map<String,dynamic>.from(call));
+        }
       }
+      await _load();
     } catch(e) { if(mounted) setState(()=>_error=e.toString()); }
     finally { if(mounted) setState(()=>_busy=false); }
   }
