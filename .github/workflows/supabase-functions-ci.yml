@@ -1,0 +1,33 @@
+name: Supabase Functions CI
+
+on:
+  push:
+    branches: [main, feat/v4.1-flutter-foundation]
+    paths:
+      - "supabase/functions/**"
+      - ".github/workflows/supabase-functions-ci.yml"
+  pull_request:
+    paths:
+      - "supabase/functions/**"
+      - ".github/workflows/supabase-functions-ci.yml"
+
+concurrency:
+  group: supabase-functions-ci-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Edge Functions
+        run: deno check supabase/functions/rtc-ice-servers/index.ts
+      - name: Lint Edge Functions
+        run: deno lint supabase/functions/rtc-ice-servers/index.ts

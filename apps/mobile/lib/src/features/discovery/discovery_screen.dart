@@ -1,0 +1,143 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Public-profile discovery; profile RLS remains the source of visibility truth.
+class DiscoveryScreen extends StatefulWidget {
+  const DiscoveryScreen({super.key});
+  @override
+  State<DiscoveryScreen> createState() => _DiscoveryScreenState();
+}
+
+class _DiscoveryScreenState extends State<DiscoveryScreen> {
+  final _db = Supabase.instance.client;
+  final _query = TextEditingController();
+  List<Map<String, dynamic>> _results = [];
+  final Set<String> _requested = {};
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search() async {
+    final term = _query.text.trim().replaceAll('%', '').replaceAll('_', '');
+    if (term.length < 2) {
+      setState(() { _error = 'कम से कम 2 अक्षर लिखें।'; _results = []; });
+      return;
+    }
+    setState(() { _busy = true; _error = null; });
+    try {
+      final uid = _db.auth.currentUser!.id;
+      final rows = await _db.from('profiles')
+        .select('id,username,display_name,bio,avatar_url')
+        .neq('id', uid)
+        .or('username.ilike.%$term%,display_name.ilike.%$term%')
+        .limit(30);
+      if (mounted) setState(() => _results = List<Map<String, dynamic>>.from(rows));
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Search failed: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _sendRequest(String id) async {
+    if (_requested.contains(id)) return;
+    setState(() => _requested.add(id));
+    try {
+      final result = await _db.rpc('friend_request', params: {'p_friend': id});
+      if (!mounted) return;
+      final msg = result == 'accepted' ? 'Friend connection accepted!' : 'Friend request sent.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } catch (e) {
+      if (mounted) setState(() => _requested.remove(id));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Request failed: $e')));
+    }
+  }
+
+  Future<void> _blockUser(String id) async {
+    final yes = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Block this user?'),
+      content: const Text('यह व्यक्ति आपको friend request या message नहीं भेज पाएगा। मौजूदा friendship हट जाएगी।'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Block')),
+      ],
+    ));
+    if (yes != true) return;
+    try {
+      await _db.rpc('user_block', params: {'p_user': id});
+      if (mounted) {
+        setState(() => _results.removeWhere((p) => p['id'].toString() == id));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User blocked')));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Block failed: $e')));
+    }
+  }
+
+  Future<void> _reportUser(String id) async {
+    const categories = ['harassment','sexual_content','minor_safety','spam','hate','violence','impersonation','scam','other'];
+    final category = await showDialog<String>(context: context, builder: (ctx) => SimpleDialog(
+      title: const Text('Report profile'),
+      children: categories.map((c) => SimpleDialogOption(
+        onPressed: () => Navigator.pop(ctx, c), child: Text(c.replaceAll('_', ' ')))).toList(),
+    ));
+    if (category == null) return;
+    try {
+      await _db.rpc('user_report', params: {'p_user': id, 'p_category': category, 'p_description': ''});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report failed: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Discover people')),
+    body: Column(children: [
+      Padding(padding: const EdgeInsets.all(16), child: Row(children: [
+        Expanded(child: TextField(controller: _query, textInputAction: TextInputAction.search,
+          onSubmitted: (_) => _search(),
+          decoration: const InputDecoration(labelText: 'Username or name',
+            prefixIcon: Icon(Icons.search), border: OutlineInputBorder()))),
+        const SizedBox(width: 8),
+        IconButton(onPressed: _busy ? null : _search, icon: const Icon(Icons.search)),
+      ])),
+      if (_busy) const LinearProgressIndicator(),
+      if (_error != null) Padding(padding: const EdgeInsets.all(12), child: Text(_error!)),
+      Expanded(child: _results.isEmpty
+        ? const Center(child: Text('Public profiles खोजने के लिए search करें।'))
+        : ListView.builder(itemCount: _results.length, itemBuilder: (context, i) {
+          final p = _results[i];
+          final avatar = p['avatar_url']?.toString();
+          return ListTile(
+            leading: CircleAvatar(backgroundImage: avatar == null || avatar.isEmpty ? null : NetworkImage(avatar),
+              child: avatar == null || avatar.isEmpty ? const Icon(Icons.person) : null),
+            title: Text((p['display_name'] as String?)?.isNotEmpty == true
+              ? p['display_name'] as String : '@${p['username']}'),
+            subtitle: Text('@${p['username']} • ${p['bio'] ?? ''}', maxLines: 2,
+              overflow: TextOverflow.ellipsis),
+            trailing: PopupMenuButton<String>(
+              onSelected: (action) {
+                final id = p['id'].toString();
+                if (action == 'friend') _sendRequest(id);
+                if (action == 'report') _reportUser(id);
+                if (action == 'block') _blockUser(id);
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'friend', child: Text(_requested.contains(p['id'].toString()) ? 'Request sent' : 'Add friend')),
+                const PopupMenuItem(value: 'report', child: Text('Report profile')),
+                const PopupMenuItem(value: 'block', child: Text('Block user')),
+              ],
+              icon: const Icon(Icons.more_vert),
+            ),
+          );
+        })),
+    ]),
+  );
+}

@@ -1,5 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../discovery/discovery_screen.dart';
+import '../friends/friends_screen.dart';
+import '../profile/profile_screen.dart';
+import '../matching/matching_screen.dart';
+import '../calls/calls_screen.dart';
 
 class MessagingScreen extends StatefulWidget {
   const MessagingScreen({super.key});
@@ -35,75 +43,64 @@ class _MessagingScreenState extends State<MessagingScreen> {
 
   Future<void> _openFriend() async {
     final ctrl = TextEditingController();
-    final id = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Open friend chat'),
-        content: TextField(controller: ctrl,
-          decoration: const InputDecoration(labelText: 'Friend user ID (UUID)')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Open')),
-        ],
-      ),
-    );
+    final id = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Open friend chat'),
+      content: TextField(controller: ctrl, decoration: const InputDecoration(labelText: 'Friend user ID (UUID)')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('Open')),
+      ],
+    ));
     ctrl.dispose();
     if (id == null || id.isEmpty) return;
     try {
       final conversation = await _db.rpc('conversation_open', params: {'p_friend': id});
       if (!mounted) return;
-      await Navigator.push(context, MaterialPageRoute(
-        builder: (_) => ConversationScreen(conversationId: conversation.toString())));
+      await Navigator.push(context, MaterialPageRoute(builder: (_) =>
+        ConversationScreen(conversationId: conversation.toString())));
       if (mounted) setState(() => _future = _load());
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Chat नहीं खुला: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chat नहीं खुला: $e')));
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Messages'), actions: [
-        IconButton(onPressed: _openFriend, icon: const Icon(Icons.add_comment),
-          tooltip: 'New chat')
-      ]),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done)
-            return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError)
-            return Center(child: Text('Messages load नहीं हुए: ${snapshot.error}'));
-          final rows = snapshot.data ?? [];
-          if (rows.isEmpty)
-            return const Center(child: Text('अभी कोई chat नहीं। + से friend chat खोलें।'));
-          return ListView.builder(
-            itemCount: rows.length,
-            itemBuilder: (context, index) {
-              final conv = rows[index]['conversations'] as Map<String, dynamic>?;
-              final uid = _db.auth.currentUser!.id;
-              final peer = conv == null ? 'Friend' :
-                (conv['user_a'] == uid ? conv['user_b'] : conv['user_a']);
-              return ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.person)),
-                title: Text('Friend • ${peer.toString().substring(0, 8)}…'),
-                subtitle: const Text('Private conversation'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () async {
-                  await Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => ConversationScreen(
-                      conversationId: rows[index]['conversation_id'].toString())));
-                  if (mounted) setState(() => _future = _load());
-                },
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Messages'), actions: [
+      IconButton(onPressed: () => setState(() => _future = _load()),
+        icon: const Icon(Icons.refresh), tooltip: 'Refresh messages'),
+      IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MatchingScreen())),
+        icon: const Icon(Icons.travel_explore), tooltip: 'Meet someone'),
+      IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DiscoveryScreen())),
+        icon: const Icon(Icons.explore_outlined), tooltip: 'Discover'),
+      IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+        icon: const Icon(Icons.account_circle), tooltip: 'My profile'),
+      IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen())),
+        icon: const Icon(Icons.people_alt), tooltip: 'Friends & requests'),
+      IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CallsScreen())),
+        icon: const Icon(Icons.call), tooltip: 'Private calls'),
+      IconButton(onPressed: _openFriend, icon: const Icon(Icons.add_comment), tooltip: 'New chat')
+    ]),
+    body: FutureBuilder<List<Map<String, dynamic>>>(future: _future, builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+      if (snapshot.hasError) return Center(child: Text('Messages load नहीं हुए: ${snapshot.error}'));
+      final rows = snapshot.data ?? [];
+      if (rows.isEmpty) return const Center(child: Text('अभी कोई chat नहीं। Discover से friend बनाएं।'));
+      return ListView.builder(itemCount: rows.length, itemBuilder: (context, index) {
+        final conv = rows[index]['conversations'] as Map<String, dynamic>?;
+        final uid = _db.auth.currentUser!.id;
+        final peer = conv == null ? 'Friend' : (conv['user_a'] == uid ? conv['user_b'] : conv['user_a']);
+        return ListTile(leading: const CircleAvatar(child: Icon(Icons.person)),
+          title: Text('Friend • ${peer.toString().substring(0, 8)}…'),
+          subtitle: const Text('Private conversation'), trailing: const Icon(Icons.chevron_right),
+          onTap: () async {
+            await Navigator.push(context, MaterialPageRoute(builder: (_) =>
+              ConversationScreen(conversationId: rows[index]['conversation_id'].toString())));
+            if (mounted) setState(() => _future = _load());
+          });
+      });
+    }),
+  );
 }
 
 class ConversationScreen extends StatefulWidget {
@@ -119,31 +116,91 @@ class _ConversationScreenState extends State<ConversationScreen> {
   List<Map<String, dynamic>> _messages = [];
   bool _loading = true, _sending = false;
   RealtimeChannel? _channel;
+  Timer? _readReceiptTimer;
+  DateTime? _peerReadAt;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _readReceiptTimer = Timer.periodic(const Duration(seconds: 15), (_) => _refreshPeerReadAt());
     _channel = _db.channel('messages-${widget.conversationId}')
-      .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public',
-        table: 'messages',
-        filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq,
-          column: 'conversation_id', value: widget.conversationId),
+      .onPostgresChanges(event: PostgresChangeEvent.all, schema: 'public', table: 'messages',
+        filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'conversation_id', value: widget.conversationId),
         callback: (_) => _load()).subscribe();
+  }
+
+  Future<void> _refreshPeerReadAt() async {
+    try {
+      final value = await _db.rpc('conversation_peer_read_at', params: {'p_conversation': widget.conversationId});
+      if (!mounted) return;
+      setState(() => _peerReadAt = value == null ? null : DateTime.tryParse(value.toString()));
+    } catch (_) {
+      // Read receipts are best-effort; messaging must continue if unavailable.
+    }
   }
 
   Future<void> _load() async {
     try {
-      final rows = await _db.from('messages')
-        .select('id,sender_id,body,created_at,edited_at,deleted_at')
+      final rows = await _db.from('messages').select('id,sender_id,body,created_at,edited_at,deleted_at')
         .eq('conversation_id', widget.conversationId).order('created_at');
-      if (mounted) setState(() => _messages = List<Map<String, dynamic>>.from(rows));
+      if (mounted) setState(() { _messages = List<Map<String, dynamic>>.from(rows); _loading = false; });
       await _db.rpc('conversation_mark_read', params: {'p_conversation': widget.conversationId});
+      await _refreshPeerReadAt();
+    } catch (_) { if (mounted) setState(() => _loading = false); }
+  }
+
+  Future<void> _editMessage(Map<String, dynamic> message) async {
+    final controller = TextEditingController(text: message['body']?.toString() ?? '');
+    final body = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Edit message'),
+      content: TextField(controller: controller, autofocus: true, maxLines: 5, minLines: 1),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Save')),
+      ],
+    ));
+    controller.dispose();
+    if (body == null || body.isEmpty || body == message['body']) return;
+    try {
+      await _db.rpc('message_edit', params: {'p_message': message['id'], 'p_body': body});
+      await _load();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Messages load error: $e')));
-    } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Edit failed: $e')));
+    }
+  }
+
+  Future<void> _deleteMessage(Map<String, dynamic> message) async {
+    final yes = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Delete message?'),
+      content: const Text('यह message हटाया जाएगा।'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+      ],
+    ));
+    if (yes != true) return;
+    try {
+      await _db.rpc('message_delete', params: {'p_message': message['id']});
+      await _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+    }
+  }
+
+  Future<void> _reportMessage(Map<String, dynamic> message) async {
+    const categories = ['harassment', 'sexual_content', 'spam', 'hate', 'violence', 'scam', 'other'];
+    final category = await showDialog<String>(context: context, builder: (ctx) => SimpleDialog(
+      title: const Text('Report message'),
+      children: categories.map((c) => SimpleDialogOption(
+        onPressed: () => Navigator.pop(ctx, c), child: Text(c.replaceAll('_', ' ')))).toList(),
+    ));
+    if (category == null) return;
+    try {
+      await _db.rpc('message_report', params: {'p_message': message['id'], 'p_category': category, 'p_description': ''});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report failed: $e')));
     }
   }
 
@@ -152,151 +209,66 @@ class _ConversationScreenState extends State<ConversationScreen> {
     if (body.isEmpty || _sending) return;
     setState(() => _sending = true);
     try {
-      await _db.rpc('message_send', params: {
-        'p_conversation': widget.conversationId, 'p_body': body});
+      await _db.rpc('message_send', params: {'p_conversation': widget.conversationId, 'p_body': body});
       _input.clear();
       await _load();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Message नहीं भेजा: $e')));
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
-  }
-
-  Future<void> _edit(String id, String current) async {
-    final ctrl = TextEditingController(text: current);
-    final edited = await showDialog<String>(context: context, builder: (ctx) =>
-      AlertDialog(title: const Text('Edit message'), content: TextField(
-        controller: ctrl, autofocus: true, maxLines: 4, maxLength: 4000),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Save')),
-        ]));
-    ctrl.dispose();
-    if (edited == null || edited.isEmpty || edited == current) return;
-    try {
-      await _db.rpc('message_edit', params: {'p_message': id, 'p_body': edited});
-      await _load();
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Edit failed: $e')));
-    }
-  }
-
-  Future<void> _messageActions(Map<String, dynamic> message, bool mine) async {
-    final id = message['id'].toString();
-    if (!mine) { await _report(id); return; }
-    final action = await showModalBottomSheet<String>(context: context, builder: (ctx) =>
-      SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(leading: const Icon(Icons.edit), title: const Text('Edit message'),
-          onTap: () => Navigator.pop(ctx, 'edit')),
-        ListTile(leading: const Icon(Icons.delete_outline), title: const Text('Delete message'),
-          onTap: () => Navigator.pop(ctx, 'delete')),
-      ])));
-    if (action == 'edit') await _edit(id, message['body'].toString());
-    if (action == 'delete') await _delete(id);
-  }
-
-  Future<void> _delete(String id) async {
-    try {
-      await _db.rpc('message_delete', params: {'p_message': id});
-      await _load();
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delete failed: $e')));
-    }
-  }
-
-  Future<void> _report(String id) async {
-    const categories = <String, String>{
-      'harassment': 'Harassment',
-      'sexual_content': 'Sexual content',
-      'minor_safety': 'Minor safety',
-      'spam': 'Spam',
-      'hate': 'Hate',
-      'violence': 'Violence',
-      'impersonation': 'Impersonation',
-      'scam': 'Scam',
-      'other': 'Other',
-    };
-    final category = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(child: ListView(
-        shrinkWrap: true,
-        children: [
-          const ListTile(title: Text('Report message'),
-            subtitle: Text('कारण चुनें')),
-          ...categories.entries.map((entry) => ListTile(
-            leading: const Icon(Icons.flag_outlined),
-            title: Text(entry.value),
-            onTap: () => Navigator.pop(ctx, entry.key))),
-        const SizedBox(height: 12),
-        ],
-      )),
-    );
-    if (category == null) return;
-    try {
-      await _db.rpc('message_report', params: {
-        'p_message': id, 'p_category': category, 'p_description': ''});
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Report submitted. धन्यवाद।')));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Report नहीं भेजी गई: $e')));
-    }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Message नहीं भेजा: $e')));
+    } finally { if (mounted) setState(() => _sending = false); }
   }
 
   @override
   void dispose() {
+    _readReceiptTimer?.cancel();
     _input.dispose();
     if (_channel != null) _db.removeChannel(_channel!);
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final uid = _db.auth.currentUser!.id;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Private chat')),
-      body: Column(children: [
-        Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) :
-          ListView.builder(
-            padding: const EdgeInsets.all(12), itemCount: _messages.length,
-            itemBuilder: (context, index) {
-              final message = _messages[index];
-              final mine = message['sender_id'] == uid;
-              return Align(
-                alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-                child: GestureDetector(
-                  onLongPress: message['deleted_at'] != null ? null :
-                    () => _messageActions(message, mine),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 5),
-                    padding: const EdgeInsets.all(12),
-                    constraints: const BoxConstraints(maxWidth: 300),
-                    decoration: BoxDecoration(
-                      color: mine ? Theme.of(context).colorScheme.primaryContainer :
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(16)),
-                    child: Text(message['deleted_at'] != null ? 'Message deleted' :
-                      message['body'].toString()),
-                  ),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Private chat')),
+    body: Column(children: [
+      Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) :
+        ListView.builder(itemCount: _messages.length, itemBuilder: (context, i) {
+          final m = _messages[i];
+          final mine = m['sender_id'] == _db.auth.currentUser!.id;
+          final deleted = m['deleted_at'] != null;
+          return Align(alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(margin: const EdgeInsets.all(6), padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(color: mine ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(deleted ? 'Message deleted' : m['body'].toString()),
+                  if (!deleted && m['edited_at'] != null)
+                    Text('edited', style: Theme.of(context).textTheme.labelSmall),
+                  if (mine && !deleted && _peerReadAt != null &&
+                      (DateTime.tryParse(m['created_at'].toString())?.isBefore(_peerReadAt!) ?? false ||
+                       DateTime.tryParse(m['created_at'].toString())?.isAtSameMomentAs(_peerReadAt!) == true))
+                    Text('Seen', style: Theme.of(context).textTheme.labelSmall),
+                ])),
+                if (!deleted) PopupMenuButton<String>(
+                  tooltip: 'Message actions', iconSize: 18, padding: EdgeInsets.zero,
+                  onSelected: (action) {
+                    if (action == 'edit') _editMessage(m);
+                    if (action == 'delete') _deleteMessage(m);
+                    if (action == 'report') _reportMessage(m);
+                  },
+                  itemBuilder: (_) => [
+                    if (mine) const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    if (mine) const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    if (!mine) const PopupMenuItem(value: 'report', child: Text('Report')),
+                  ],
                 ),
-              );
-            },
-          )),
-        SafeArea(child: Padding(padding: const EdgeInsets.all(8),
-          child: Row(children: [
-            Expanded(child: TextField(controller: _input, minLines: 1, maxLines: 4,
-              decoration: const InputDecoration(hintText: 'Write a message…',
-                border: OutlineInputBorder()))),
-            IconButton(onPressed: _sending ? null : _send,
-              icon: _sending ? const CircularProgressIndicator() : const Icon(Icons.send)),
-          ]),
-        )),
-      ]),
-    );
-  }
+              ]),
+            ));
+        })),
+      SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
+        Expanded(child: TextField(controller: _input, textInputAction: TextInputAction.send, onSubmitted: (_) => _send(),
+          decoration: const InputDecoration(hintText: 'Message…', border: OutlineInputBorder()))),
+        IconButton(onPressed: _sending ? null : _send, icon: const Icon(Icons.send))
+      ])))
+    ]),
+  );
 }
