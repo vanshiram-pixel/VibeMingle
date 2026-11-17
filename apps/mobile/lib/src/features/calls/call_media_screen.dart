@@ -183,7 +183,7 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
           if (mounted) setState(() => _status = 'Answer sent… connecting');
           break;
         case 'answer':
-          if (pc.remoteDescription == null) {
+          if (await pc.getRemoteDescription() == null) {
             await pc.setRemoteDescription(RTCSessionDescription(
               payload['sdp']?.toString(), payload['type']?.toString()));
             for (final candidate in _pendingIce) {
