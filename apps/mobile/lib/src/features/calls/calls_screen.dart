@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'call_media_screen.dart';
 
-/// Private call invitations and lifecycle. WebRTC media is not yet wired here.
+/// Private call invitations, lifecycle, and accepted-call media navigation.
 class CallsScreen extends StatefulWidget {
   const CallsScreen({super.key});
   @override
