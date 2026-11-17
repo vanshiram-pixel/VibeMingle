@@ -9,7 +9,12 @@ export default function WebRtcMedia({call,me}:{call:Call;me:string}){
  useEffect(()=>{let alive=true;const db=createSupabaseBrowserClient();const peer=call.caller_id===me?call.callee_id:call.caller_id;let channel:any;
  const run=async()=>{try{
  const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:call.call_type==="video"});if(!alive)return;streamRef.current=stream;if(localRef.current)localRef.current.srcObject=stream;
- const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});pcRef.current=pc;stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+ let iceServers:RTCIceServer[]=[{urls:"stun:stun.l.google.com:19302"}];
+ const {data:iceConfig,error:iceConfigError}=await db.functions.invoke("rtc-ice-servers");
+ if(!iceConfigError&&iceConfig&&Array.isArray((iceConfig as {iceServers?:unknown}).iceServers)){
+   iceServers=(iceConfig as {iceServers:RTCIceServer[]}).iceServers;
+ }
+ const pc=new RTCPeerConnection({iceServers});pcRef.current=pc;stream.getTracks().forEach(t=>pc.addTrack(t,stream));
  pc.ontrack=e=>{if(remoteRef.current)remoteRef.current.srcObject=e.streams[0]};pc.onconnectionstatechange=()=>setStatus("Connection: "+pc.connectionState);pc.onicecandidate=e=>{if(e.candidate)void db.rpc("call_signal_send",{p_call:call.id,p_recipient:peer,p_type:"ice",p_payload:e.candidate.toJSON()})};
  const apply=async(s:Signal)=>{if(seen.current.has(s.id)||s.recipient_id!==me)return;seen.current.add(s.id);if(s.signal_type==="offer"){await pc.setRemoteDescription(s.payload as RTCSessionDescriptionInit);for(const c of queued.current)await pc.addIceCandidate(c);queued.current=[];const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await db.rpc("call_signal_send",{p_call:call.id,p_recipient:peer,p_type:"answer",p_payload:answer});setStatus("Answer sent · connecting…")}else if(s.signal_type==="answer"){if(!pc.remoteDescription){await pc.setRemoteDescription(s.payload as RTCSessionDescriptionInit);for(const c of queued.current)await pc.addIceCandidate(c);queued.current=[];setStatus("Answer received · connecting…")}}else{const candidate=s.payload as RTCIceCandidateInit;if(pc.remoteDescription)await pc.addIceCandidate(candidate);else queued.current.push(candidate)}};
  channel=db.channel("rtc-"+call.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"call_signals",filter:"call_id=eq."+call.id},payload=>{void apply(payload.new as Signal).catch(e=>setStatus(e.message))}).subscribe();
