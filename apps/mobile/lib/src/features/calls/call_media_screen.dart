@@ -25,6 +25,8 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
   bool _muted = false;
   bool _camera = true;
   bool _busy = true;
+  bool _disposed = false;
+  Timer? _callStatusTimer;
 
   String get _me => _db.auth.currentUser!.id;
   String get _peer => widget.call['caller_id'] == _me
@@ -36,6 +38,20 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
   void initState() {
     super.initState();
     _start();
+    _callStatusTimer = Timer.periodic(const Duration(seconds: 5), (_) => _checkCallStatus());
+  }
+
+  Future<void> _checkCallStatus() async {
+    if (_disposed) return;
+    try {
+      final row = await _db.from('call_requests').select('status')
+          .eq('id', widget.call['id'].toString()).maybeSingle();
+      if (!_disposed && row != null && row['status'] != 'accepted' && mounted) {
+        Navigator.of(context).maybePop();
+      }
+    } catch (_) {
+      // A transient network failure must not terminate an otherwise active call.
+    }
   }
 
   Future<void> _start() async {
@@ -48,6 +64,10 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
             ? {'facingMode': 'user', 'width': 640, 'height': 480}
             : false,
       });
+      if (_disposed) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       _stream = stream;
       _local.srcObject = stream;
       final pc = await createPeerConnection({
@@ -205,6 +225,8 @@ class _CallMediaScreenState extends State<CallMediaScreen> {
 
   @override
   void dispose() {
+    _disposed = true;
+    _callStatusTimer?.cancel();
     if (_channel != null) unawaited(_db.removeChannel(_channel!));
     _pc?.close();
     _stream?.getTracks().forEach((track) => track.stop());
