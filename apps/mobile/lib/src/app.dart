@@ -13,7 +13,13 @@ class VibeMingleApp extends StatefulWidget {
 }
 
 class _VibeMingleAppState extends State<VibeMingleApp> {
-  late final Future<_BootstrapResult> _bootstrap = _initialize();
+  late Future<_BootstrapResult> _bootstrap;
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap = _initialize();
+  }
 
   Future<_BootstrapResult> _initialize() async {
     const url = String.fromEnvironment('SUPABASE_URL');
@@ -25,20 +31,25 @@ class _VibeMingleAppState extends State<VibeMingleApp> {
     }
 
     try {
-      await Future.wait<void>([
-        Supabase.initialize(
-          url: url,
-          publishableKey: key,
-          authOptions: const FlutterAuthClientOptions(
-            authFlowType: AuthFlowType.pkce,
-          ),
+      final initialization = Supabase.initialize(
+        url: url,
+        publishableKey: key,
+        authOptions: const FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.pkce,
         ),
+      );
+      await Future.wait<void>([
+        initialization.then<void>((_) {}),
         Future<void>.delayed(const Duration(milliseconds: 1100)),
       ]);
       return const _BootstrapResult.ready();
     } catch (error) {
       return _BootstrapResult.failed(error);
     }
+  }
+
+  void _retryStartup() {
+    setState(() => _bootstrap = _initialize());
   }
 
   @override
@@ -65,7 +76,7 @@ class _VibeMingleAppState extends State<VibeMingleApp> {
             return _StartupErrorScreen(
               message: result?.error?.toString() ??
                   'VibeMingle could not finish starting. Please try again.',
-              onRetry: () => setState(() {}),
+              onRetry: _retryStartup,
             );
           }
           if (result.configurationMissing) {
